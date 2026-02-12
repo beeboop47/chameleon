@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Find the Impostor — Manual Mode Customizable</title>
+  <title>Find the Impostor — Manual Mode Customizable (Updated)</title>
   <style>
     :root{--bg:#071029;--card:#0b1220;--accent:#60a5fa;--muted:#94a3b8}
     *{box-sizing:border-box;font-family:Inter,system-ui,Arial,sans-serif}
@@ -13,6 +13,7 @@
     label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
     input,select,textarea,button{font:inherit}
     input[type=text],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    input[type=password]{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
     textarea{min-height:64px}
     .players{display:flex;flex-direction:column;gap:8px}
     .row{display:flex;gap:8px;align-items:center}
@@ -56,8 +57,25 @@
         <label class="toggle"><input type="checkbox" id="enableAssassin" style="margin-right:8px"> Assassin</label>
         <label class="toggle"><input type="checkbox" id="enableSeer" style="margin-right:8px"> Seer</label>
         <label class="toggle"><input type="checkbox" id="enableDoubleAgent" style="margin-right:8px"> Double Agent</label>
+        <label class="toggle"><input type="checkbox" id="enableFollower" style="margin-right:8px"> Follower</label>
       </div>
-      <div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a target to get voted out. Seer: learns one special role (if any). Double Agent: appears as impostor to impostors but is actually innocent. Note: IMPOSTORS DO NOT SEE THE SHARED PHRASE in regular Word/Question modes. Other special roles still see the phrase by default.</div>
+
+      <div style="margin-top:8px">
+        <label>Phrase source</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="toggle"><input type="radio" name="phraseSource" id="phraseManual" value="manual" checked style="margin-right:8px"> Manual</label>
+          <label class="toggle"><input type="radio" name="phraseSource" id="phraseOpenAI" value="openai" style="margin-right:8px"> Generate with OpenAI</label>
+        </div>
+        <div id="openaiOptions" style="margin-top:8px;display:none">
+          <label>OpenAI API key (host)</label>
+          <input id="openaiKey" type="password" placeholder="sk-... (host-only)">
+          <label style="margin-top:8px">OpenAI prompt (optional)</label>
+          <input id="openaiPrompt" type="text" placeholder="e.g. 'A short tropical-themed phrase, 1-3 words'">
+          <div class="muted small" style="margin-top:6px">If you choose Generate with OpenAI, the host's API key will be used client-side to request a short phrase. No key is stored by this page. You can also leave the prompt blank to use a default instruction.</div>
+        </div>
+      </div>
+
+      <div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a target to get voted out (assassin does NOT see the shared phrase). Seer: learns one special role (if any). Double Agent: appears as impostor to impostors but is actually innocent. Follower: knows the shared phrase and is assigned a target to defend (in RANDOM mode the target cannot be an innocent, seer or double agent; in MANUAL mode there are absolutely no restrictions).</div>
     </div>
     <div style="width:200px">
       <label>Controls</label>
@@ -122,7 +140,7 @@
   <div id="summaryContainer"></div>
 </div>
 
-<footer style="margin-top:12px" class="muted">Manual mode supports host-only seer/assassin overrides and per-player words. Players are not shown that a word is player-specific.</footer>
+<footer style="margin-top:12px" class="muted">Manual mode supports host-only seer/assassin/follower overrides and per-player words. Players are not shown that a word is player-specific.</footer>
 
   </div>
 
@@ -132,6 +150,7 @@
     let roles = [];
     let current = 0;
     let assassinTargets = {}; // mapping assassinIndex -> targetIndex
+    let followerTargets = {}; // mapping followerIndex -> targetIndex
     let allViewed = false; // flag when all players have gone through
 
     let questionNonImpostor = '';
@@ -153,6 +172,7 @@
     const gameModeSel = document.getElementById('gameMode');
     const bluffHintContainer = document.getElementById('bluffHintContainer');
     const questionContainer = document.getElementById('questionContainer');
+    const openaiOptions = document.getElementById('openaiOptions');
 
     function render(){
       playersEl.innerHTML = '';
@@ -164,7 +184,7 @@
         // role selector (visible in manual mode)
         const mode = document.getElementById('mode').value;
         const select = document.createElement('select'); select.className='role-select';
-        const opts = ['normal','impostor','jester','assassin','seer','doubleAgent'];
+        const opts = ['normal','impostor','jester','assassin','seer','doubleAgent','follower'];
         opts.forEach(o=>{ const el = document.createElement('option'); el.value=o; el.textContent = o.charAt(0).toUpperCase() + o.slice(1); select.appendChild(el); });
         select.value = p.selectedRole || 'normal';
         select.style.display = mode==='manual' ? 'inline-block' : 'none';
@@ -178,6 +198,19 @@
             const tsel = document.createElement('select'); tsel.className='inline-small';
             const noneOpt = document.createElement('option'); noneOpt.value='-1'; noneOpt.textContent='Target: —None—'; tsel.appendChild(noneOpt);
             players.forEach((pp,ii)=>{ const o = document.createElement('option'); o.value=String(ii); o.textContent = (pp.name||('Player '+(ii+1))); tsel.appendChild(o); });
+            tsel.value = (typeof p.selectedTargetIndex === 'number')? String(p.selectedTargetIndex) : '-1';
+            tsel.addEventListener('change', e=>{ p.selectedTargetIndex = parseInt(e.target.value,10); if(p.selectedTargetIndex===-1) p.selectedTargetIndex = null; });
+            row.appendChild(tsel);
+          }
+
+          // If player is a FOLLOWER, allow choosing a specific target (in MANUAL mode there are NO restrictions)
+          if((p.selectedRole || 'normal') === 'follower'){
+            const tsel = document.createElement('select'); tsel.className='inline-small';
+            const noneOpt = document.createElement('option'); noneOpt.value='-1'; noneOpt.textContent='Target: —None—'; tsel.appendChild(noneOpt);
+            players.forEach((pp,ii)=>{
+              // MANUAL MODE: absolutely no restrictions — include every player as a potential target (including self)
+              const o = document.createElement('option'); o.value=String(ii); o.textContent = (pp.name||('Player '+(ii+1))); tsel.appendChild(o);
+            });
             tsel.value = (typeof p.selectedTargetIndex === 'number')? String(p.selectedTargetIndex) : '-1';
             tsel.addEventListener('change', e=>{ p.selectedTargetIndex = parseInt(e.target.value,10); if(p.selectedTargetIndex===-1) p.selectedTargetIndex = null; });
             row.appendChild(tsel);
@@ -202,7 +235,8 @@
 
           // Per-player word input for roles that get the shared phrase
           const selectedRole = (p.selectedRole || 'normal');
-          const getsPhrase = ['normal','jester','assassin','seer','doubleAgent'].includes(selectedRole);
+          // Assassin should NOT get the phrase. Followers DO get the phrase.
+          const getsPhrase = ['normal','jester','seer','doubleAgent','follower'].includes(selectedRole);
           if(getsPhrase){
             const cw = document.createElement('input');
             cw.type = 'text'; cw.placeholder = 'Optional (host use only)';
@@ -231,10 +265,48 @@
       questionContainer.style.display = gameModeSel.value==='question' ? 'block' : 'none';
     });
 
+    // show/hide openai options
+    document.getElementById('phraseManual').addEventListener('change',()=>{ openaiOptions.style.display='none'; });
+    document.getElementById('phraseOpenAI').addEventListener('change',()=>{ openaiOptions.style.display='block'; });
+
     function pick(n,k){ const a = [...Array(n).keys()]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a.slice(0,Math.min(k,a.length)); }
     function pickFromArray(arr){ if(!arr || arr.length===0) return null; return arr[Math.floor(Math.random()*arr.length)]; }
 
-    startBtn.addEventListener('click',()=>{
+    async function generateOpenAIPhrase(apiKey, prompt){
+      if(!apiKey) throw new Error('No OpenAI API key provided');
+      const system = "You are a tiny assistant that returns exactly one short phrase suitable for a party social-deduction game. Return only the phrase; do not add explanations. The phrase should be 1 to 3 words.";
+      const user = (prompt && prompt.trim()) ? prompt.trim() : "Provide a single short shared phrase suitable for a social-deduction party game. Output only the phrase, 1 to 3 words, no punctuation.";
+      const body = { model: 'gpt-3.5-turbo', messages: [{role:'system',content:system},{role:'user',content:user}], max_tokens:20, temperature:0.8 };
+      const res = await fetch('https://api.openai.com/v1/chat/completions',{ method:'POST', headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey }, body: JSON.stringify(body) });
+      if(!res.ok){ const txt = await res.text(); throw new Error('OpenAI API error: '+res.status+' '+txt); }
+      const j = await res.json();
+      const content = j?.choices?.[0]?.message?.content;
+      if(!content) throw new Error('No content returned from OpenAI');
+      // sanitize: take first line, trim quotes and punctuation at ends
+      let out = String(content).split(/
+/)[0].trim();
+      out = out.replace(/^\"|\"$/g,'').replace(/^\'|\'$/g,'').trim();
+      return out;
+    }
+
+    startBtn.addEventListener('click', async ()=>{
+      // if OpenAI selected, try to generate phrase first
+      const phraseSource = document.querySelector('input[name="phraseSource"]:checked').value;
+      if(phraseSource === 'openai'){
+        const key = document.getElementById('openaiKey').value.trim();
+        const prompt = document.getElementById('openaiPrompt').value.trim();
+        try{
+          const generated = await generateOpenAIPhrase(key,prompt);
+          // put it into the phrase input so host sees it
+          document.getElementById('phrase').value = generated;
+        }catch(err){
+          // generation failed — inform host and fall back to manual phrase
+          alert('OpenAI phrase generation failed: '+err.message+'
+Falling back to manual phrase.');
+        }
+      }
+
+      // proceed with existing start flow
       if(players.length<2){ alert('Need at least 2 players'); return; }
       const impostorCount = parseInt(document.getElementById('impostorCount').value,10);
       const mode = document.getElementById('mode').value;
@@ -242,7 +314,8 @@
         jester: document.getElementById('enableJester').checked,
         assassin: document.getElementById('enableAssassin').checked,
         seer: document.getElementById('enableSeer').checked,
-        doubleAgent: document.getElementById('enableDoubleAgent').checked
+        doubleAgent: document.getElementById('enableDoubleAgent').checked,
+        follower: document.getElementById('enableFollower').checked
       };
 
       questionNonImpostor = document.getElementById('questionNonImpostor').value.trim();
@@ -251,6 +324,7 @@
       // initialize roles and answers
       roles = Array(players.length).fill('normal');
       assassinTargets = {};
+      followerTargets = {};
       allViewed = false;
       players.forEach(p=>{ p.answer = null; });
 
@@ -263,11 +337,25 @@
         const assassinIdx = assignRole('assassin');
         assignRole('seer');
         assignRole('doubleAgent');
+        assignRole('follower');
+
+        // assign assassin target (if any)
         if(assassinIdx!=null){ const possibleTargets = [...Array(players.length).keys()].filter(i=>i!==assassinIdx); assassinTargets[assassinIdx] = pickFromArray(possibleTargets); }
+
+        // assign follower target(s) (target cannot be innocent ('normal'), seer or doubleAgent)
+        const followerIndices = roles.map((r,i)=> r==='follower' ? i : -1).filter(i=>i!==-1);
+        followerIndices.forEach(fi=>{
+          const possibleTargets = [...Array(players.length).keys()].filter(i=> i!==fi && !['normal','seer','doubleAgent'].includes(roles[i]));
+          followerTargets[fi] = pickFromArray(possibleTargets);
+        });
+
       } else {
         players.forEach((p,i)=>{ roles[i] = p.selectedRole || 'normal'; });
         const assassinIndices = roles.map((r,i)=>r==='assassin'?i:-1).filter(i=>i!==-1);
         assassinIndices.forEach(ai=>{ const p = players[ai]; if(typeof p.selectedTargetIndex === 'number'){ assassinTargets[ai] = p.selectedTargetIndex; } else { const possibleTargets = [...Array(players.length).keys()].filter(i=>i!==ai); assassinTargets[ai] = pickFromArray(possibleTargets); } });
+
+        const followerIndices = roles.map((r,i)=>r==='follower'?i:-1).filter(i=>i!==-1);
+        followerIndices.forEach(fi=>{ const p = players[fi]; if(typeof p.selectedTargetIndex === 'number'){ followerTargets[fi] = p.selectedTargetIndex; } else { const possibleTargets = [...Array(players.length).keys()].filter(i=> i!==fi && !['normal','seer','doubleAgent'].includes(roles[i])); followerTargets[fi] = pickFromArray(possibleTargets); } });
       }
 
       current = 0; summaryContainer.innerHTML=''; setupCard.style.display='none'; playCard.style.display='block'; updatePlay();
@@ -395,6 +483,8 @@
       let html = '';
 
       function getDisplayPhrase(){
+        // Assassin should NOT get the phrase. Followers DO get the phrase.
+        if(role === 'assassin') return null;
         if(role === 'impostor') return null;
         if(p && typeof p.customWord === 'string' && p.customWord.trim() !== '') return p.customWord.trim();
         return phrase;
@@ -428,11 +518,10 @@
         html += `</div>`;
       } else if(role==='assassin'){
         const t = (assassinTargets[current]!=null) ? players[assassinTargets[current]].name || ('Player '+(assassinTargets[current]+1)) : 'None';
-        const displayPhrase = getDisplayPhrase();
+        // Assassin does NOT see the shared phrase
         html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">ASSASSIN</div>`;
-        html += `<div class="muted small" style="margin-top:8px">Goal: get your target voted out. You know the shared phrase.</div>`;
+        html += `<div class="muted small" style="margin-top:8px">Goal: get your target voted out. You do NOT see the shared phrase.</div>`;
         html += `<div class="muted small">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(t)}</div>`;
-        html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
         html += `</div>`;
       } else if(role==='seer'){
         const displayPhrase = getDisplayPhrase();
@@ -456,6 +545,14 @@
           html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
           html += `</div>`;
         }
+      } else if(role==='follower'){
+        const ft = (followerTargets[current]!=null) ? players[followerTargets[current]].name || ('Player '+(followerTargets[current]+1)) : 'None';
+        const displayPhrase = getDisplayPhrase();
+        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">FOLLOWER</div>`;
+        html += `<div class="muted small" style="margin-top:8px">Goal: defend your assigned target. You know the shared phrase.</div>`;
+        html += `<div class="muted small">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(ft)}</div>`;
+        html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
+        html += `</div>`;
       } else {
         const displayPhrase = getDisplayPhrase();
         html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">INNOCENT</div>`;
@@ -501,9 +598,10 @@
         const roleLabel = roles[i].charAt(0).toUpperCase() + roles[i].slice(1);
         let extra = '';
         if(roles[i]==='assassin' && assassinTargets[i]!=null) extra = ` — target: ${escapeHtml(players[assassinTargets[i]].name || ('Player '+(assassinTargets[i]+1)))}`;
+        if(roles[i]==='follower' && followerTargets[i]!=null) extra += ` — follower target: ${escapeHtml(players[followerTargets[i]].name || ('Player '+(followerTargets[i]+1)))}`;
         if(roles[i]==='impostor'){
           const impostorNames = roles.map((r,j)=> (r==='impostor' || r==='doubleAgent') ? (players[j].name||('Player '+(j+1))) : null).filter(Boolean);
-          extra = ` — impostors seen: ${escapeHtml(impostorNames.join(', '))}`;
+          extra += ` — impostors seen: ${escapeHtml(impostorNames.join(', '))}`;
         }
         if(roles[i]==='seer' && p && p.seerRevealRole && p.seerRevealRole !== '(none)'){
           const prIndex = (typeof p.seerRevealPlayerIndex === 'number') ? p.seerRevealPlayerIndex : null;
