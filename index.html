@@ -104,9 +104,15 @@
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
         <input id="useOpenAI" type="checkbox" style="margin-right:8px"> <label style="display:inline-block">Enable generation</label>
       </div>
+
+      <!-- New: model selection and auto-generate on start -->
       <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-        <input id="genPrompt" type="text" placeholder="Prompt for generator (e.g. 'celebrity: The Rock' or 'one-word: fruit')" />
-        <select id="genTarget" style="width:220px"><option value="phrase">Shared phrase / word</option><option value="questionNon">Question (non-impostor)</option><option value="questionImp">Impostor question / text</option><option value="bluff">Bluff hint</option></select>
+        <input id="modelInput" type="text" placeholder="Model (e.g. gpt-3.5-turbo)" style="width:220px" />
+        <label style="display:flex;align-items:center;gap:8px"><input id="generateOnStart" type="checkbox" style="margin-right:4px"> Generate on start</label>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+        <input id="genPrompt" type="text" placeholder="Prompt for generator (optional — used as a base instruction)" />
         <button id="generateBtn" type="button">Generate</button>
       </div>
       <div class="hint">Note: The API key is used directly from your browser to call OpenAI. It is not stored by the app. If you are hosting this for others, prefer a server-side integration for safety.</div>
@@ -187,10 +193,11 @@
     const openaiKeyInput = document.getElementById('openaiKey');
     const useOpenAI = document.getElementById('useOpenAI');
     const genPrompt = document.getElementById('genPrompt');
-    const genTarget = document.getElementById('genTarget');
     const generateBtn = document.getElementById('generateBtn');
     const clearKey = document.getElementById('clearKey');
     const lightsOutEl = document.getElementById('lightsOut');
+    const modelInput = document.getElementById('modelInput');
+    const generateOnStartEl = document.getElementById('generateOnStart');
 
     // --- helpers ---
     function pick(n,k){ const a = [...Array(n).keys()]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a.slice(0,Math.min(k,a.length)); }
@@ -296,44 +303,160 @@
     clearKey.addEventListener('click',()=>{ openaiKeyInput.value=''; });
 
     // --- OpenAI generation (client side) ---
+    async function callOpenAI(model, key, systemMsg, userContent){
+      const body = {
+        model: model || 'gpt-3.5-turbo',
+        messages: [
+          {role:'system', content: systemMsg || 'You are a helpful generator that returns a short phrase or single-line answer depending on the user prompt.'},
+          {role:'user', content: userContent}
+        ],
+        max_tokens: 80,
+        temperature: 0.8
+      };
+      const res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+key },
+        body: JSON.stringify(body)
+      });
+      if(!res.ok){ const t = await res.text(); throw new Error('OpenAI error: '+t); }
+      const data = await res.json();
+      const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content.trim() : '';
+      return text;
+    }
+
+    async function generateForCurrentMode(manualPrompt){
+  if(!useOpenAI.checked) { throw new Error('OpenAI generation not enabled'); }
+  const key = openaiKeyInput.value.trim();
+  if(!key) { throw new Error('No OpenAI API key provided'); }
+  const model = (modelInput.value && modelInput.value.trim()) ? modelInput.value.trim() : 'gpt-3.5-turbo';
+  const mode = document.getElementById('gameMode').value;
+  const promptBase = (manualPrompt && manualPrompt.trim()) ? manualPrompt.trim() : '';
+
+  // Helper to build the user prompt if none provided
+  const buildPrompt = (targetType) => {
+    if(promptBase) {
+      return `${promptBase}\n\nReturn a short ${targetType} suitable for an in-person party game. Keep it short (one line).`;
+    }
+    if(targetType === 'shared phrase') return 'Return a single short phrase or word suitable as a shared secret word for a party game (one or two words).';
+    if(targetType === 'bluff hint') return 'Return a short hint useful for bluffing; should be vague and concise (one line, do NOT reveal the exact word).';
+    if(targetType === 'non-impostor question') return 'Return a short question prompt that non-impostor players should answer privately in a party game (one line).';
+    if(targetType === 'impostor prompt') return 'Return a short instruction for impostors to answer vaguely or bluff in a party game (one line).';
+    return 'Return a short phrase or single-line answer.';
+  };
+
+  if(mode === 'word'){
+    const userMsg = buildPrompt('shared phrase');
+    const text = await callOpenAI(model, key, 'You are a short phrase generator.', userMsg);
+    document.getElementById('phrase').value = text.trim();
+    return {phrase: text.trim()};
+  } else if(mode === 'bluff'){
+    // Generate the shared phrase first
+    const phrasePrompt = buildPrompt('shared phrase');
+    const phraseText = (await callOpenAI(model, key, 'You are a short phrase generator.', phrasePrompt)).trim();
+
+    // Then generate a bluff hint *about that phrase* that hints without revealing it.
+    // We pass the phrase to the model in a clear instruction and ask for a short, vague, helpful hint.
+    const hintSystem = 'You are a bluff hint generator. Given a secret phrase, return a short, vague but understandable hint that helps someone fake knowledge of the phrase without revealing it.';
+    const hintUser = `Secret phrase: "${phraseText}"\n\nProduce a one-line hint (6-12 words max) that suggests the phrase but does NOT reveal it. Be concise and slightly ambiguous so impostors can bluff.`;
+    const hintText = (await callOpenAI(model, key, hintSystem, hintUser)).trim();
+
+    document.getElementById('phrase').value = phraseText;
+    document.getElementById('bluffHint').value = hintText;
+    return {phrase: phraseText, bluffHint: hintText};
+  } else if(mode === 'question'){
+  // Generate a base topic first (optional but makes questions related)
+  const topicPrompt = promptBase
+    ? `${promptBase}\n\nReturn a short topic (1-3 words) suitable for a party guessing game.`
+    : 'Return a short topic (1-3 words) suitable for a party guessing game.';
+
+  const topic = (await callOpenAI(
+    model,
+    key,
+    'You generate short game topics. They should be something most people or everyone has experienced or knows about.',
+    topicPrompt
+  )).trim();
+
+  // Generate the real question for non-impostors
+  const nonUser = `Topic: "${topic}"
+Create a short, specific question about this topic, basing it on players' personal experiences. Players who know the topic should be able to answer naturally.
+Return ONE question only.`;
+
+  const nonText = (await callOpenAI(
+    model,
+    key,
+    'You generate clear party game questions.',
+    nonUser
+  )).trim();
+
+  // Generate a DIFFERENT question for impostors
+  const impUser = `Topic: "${topic}"
+Create a DIFFERENT question related to the same topic.
+The question must NOT be identical to the first one.
+Return ONE question only.`;
+
+  const impText = (await callOpenAI(
+    model,
+    key,
+    'You generate alternate party game questions.',
+    impUser
+  )).trim();
+
+  document.getElementById('questionNonImpostor').value = nonText;
+  document.getElementById('questionImpostor').value = impText;
+
+  return {
+    topic,
+    questionNon: nonText,
+    questionImp: impText
+  };
+} else {
+    // fallback -> phrase
+    const userMsg = buildPrompt('shared phrase');
+    const text = await callOpenAI(model, key, 'You are a short phrase generator.', userMsg);
+    document.getElementById('phrase').value = text.trim();
+    return {phrase: text.trim()};
+  }
+}
+
+
     generateBtn.addEventListener('click', async ()=>{
       if(!useOpenAI.checked){ alert('Enable generation first (checkbox)'); return; }
       const key = openaiKeyInput.value.trim();
       if(!key){ alert('Please paste your OpenAI API key'); return; }
       const prompt = genPrompt.value.trim();
-      if(!prompt){ alert('Enter a short prompt (e.g. "celebrity: The Rock" or "one-word: fruit")'); return; }
-
       generateBtn.disabled = true; generateBtn.textContent = 'Generating...';
       try{
-        // Basic chat completion request using gpt-3.5-turbo. If you prefer another model, change here.
-        const body = {
-          model: 'gpt-3.5-turbo',
-          messages: [{role:'system',content:'You are a helpful generator that returns a short phrase or single-line answer depending on the user prompt.'},{role:'user',content:prompt}],
-          max_tokens: 40,
-          temperature: 0.8
-        };
-        const res = await fetch('https://api.openai.com/v1/chat/completions',{
-          method:'POST',headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer '+key }, body: JSON.stringify(body)
-        });
-        if(!res.ok){ const t = await res.text(); throw new Error('OpenAI error: '+t); }
-        const data = await res.json();
-        const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content.trim() : '';
-        if(!text){ throw new Error('No text returned'); }
-
-        const target = genTarget.value;
-        if(target==='phrase') document.getElementById('phrase').value = text;
-        else if(target==='questionNon') document.getElementById('questionNonImpostor').value = text;
-        else if(target==='questionImp') document.getElementById('questionImpostor').value = text;
-        else if(target==='bluff') document.getElementById('bluffHint').value = text;
-
+        await generateForCurrentMode(prompt);
+        alert('Generated and inserted into the form.');
       } catch(e){
         alert('Generation failed: '+e.message);
-      } finally{ generateBtn.disabled=false; generateBtn.textContent='Generate'; }
+      } finally{
+        generateBtn.disabled = false; generateBtn.textContent = 'Generate';
+      }
     });
 
     // --- game start ---
-    startBtn.addEventListener('click',()=>{
+    startBtn.addEventListener('click', async ()=>{
       if(players.length<2){ alert('Need at least 2 players'); return; }
+
+      // If user wants generation on start and generation is enabled, attempt it first (but don't block start permanently)
+      if(generateOnStartEl.checked && useOpenAI.checked){
+        if(!openaiKeyInput.value.trim()){
+          // no key: warn and continue
+          if(!confirm('Generate on start is enabled but no OpenAI API key is present. Continue without generation?')) return;
+        } else {
+          startBtn.disabled = true; startBtn.textContent = 'Generating...';
+          try{
+            await generateForCurrentMode(genPrompt.value.trim());
+            // success — we continue to start
+          } catch(e){
+            alert('Generation on start failed: '+e.message + '\nStarting game without generated content.');
+          } finally {
+            startBtn.disabled = false; startBtn.textContent = 'Start';
+          }
+        }
+      }
+
       const impostorCount = parseInt(document.getElementById('impostorCount').value,10);
       const mode = document.getElementById('mode').value;
       const enabled = {
@@ -353,15 +476,38 @@
       players.forEach(p=>{ p.answer = null; });
 
       if(mode==='random'){
+        // pick impostors
         const impostorIndices = pick(players.length, impostorCount);
         impostorIndices.forEach(i=>roles[i]='impostor');
-        let pool = [...Array(players.length).keys()].filter(i=>roles[i]!=='impostor');
+
+        // If Assassin is enabled: replace one of the impostors with the Assassin role (so Assassin takes an impostor slot)
+        if(enabled.assassin && impostorIndices.length>0){
+          const replaceIdx = pickFromArray(impostorIndices);
+          if(replaceIdx != null){
+            roles[replaceIdx] = 'assassin';
+            // remove that index from impostorIndices array (it's no longer an impostor)
+            const pos = impostorIndices.indexOf(replaceIdx);
+            if(pos > -1) impostorIndices.splice(pos,1);
+          }
+        }
+
+        // Build pool of non-impostor indices for assigning other special roles
+        let pool = [...Array(players.length).keys()].filter(i=>roles[i]!=='impostor' && roles[i]!=='assassin');
+
         function assignRole(name){ if(!enabled[name]) return null; if(pool.length===0) return null; const idx = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; roles[idx]=name; return idx; }
+
+        // assign the remaining special roles from the pool (jester, seer, doubleAgent)
         assignRole('jester');
-        const assassinIdx = assignRole('assassin');
         assignRole('seer');
         assignRole('doubleAgent');
-        if(assassinIdx!=null){ const possibleTargets = [...Array(players.length).keys()].filter(i=>i!==assassinIdx); assassinTargets[assassinIdx] = pickFromArray(possibleTargets); }
+
+        // For any assassin(s) present, pick targets
+        const assassinIdxs = roles.map((r,i)=> r==='assassin'?i:-1).filter(i=>i!==-1);
+        assassinIdxs.forEach(ai=>{
+          const possibleTargets = [...Array(players.length).keys()].filter(i=>i!==ai);
+          assassinTargets[ai] = pickFromArray(possibleTargets);
+        });
+
       } else {
         players.forEach((p,i)=>{ roles[i] = p.selectedRole || 'normal'; });
         const assassinIndices = roles.map((r,i)=>r==='assassin'?i:-1).filter(i=>i!==-1);
