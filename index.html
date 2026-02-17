@@ -349,14 +349,14 @@ async function generateForCurrentMode(manualHint){
   if(mode === 'word'){
     systemMsg = [
       'You are a concise party-game content generator for WORD mode.',
-      'Return EXACTLY ONE LINE and NOTHING ELSE: a single proper noun/title (e.g., exact video game title, character name, movie/TV title, city/place, landmark, musician/band) OR a type of vibe (for example "liminal vibe" or "eerie vibe", 2 words, the last one "vibe").',
+      'Return EXACTLY ONE LINE and NOTHING ELSE: a single proper noun/title (e.g., exact video game title, character name, movie/TV title, city/place, landmark, musician/band) or a simple common noun (e.g lion, glue, pencil etc).',
       'One line only, no extra commentary.'
     ].join(' ');
   } else if(mode === 'bluff'){
     systemMsg = [
       'You are a concise party-game generator for BLUFF mode.',
       'Return EXACTLY TWO LINES and NOTHING ELSE.',
-      'Line 1: the secret phrase (single proper noun/title or short vibe/aesthetic phrase).',
+      'Line 1: the secret phrase (a single proper noun/title (e.g., exact video game title, character name, movie/TV title, city/place, landmark, musician/band) or a simple common noun (e.g lion, glue, pencil etc)).',
       'Line 2: a short bluff hint (1–6 words) that does NOT contain any words from the secret phrase or close synonyms; it should be vague and sensory so impostors can bluff.',
       'Two lines only, no extra commentary.'
     ].join(' ');
