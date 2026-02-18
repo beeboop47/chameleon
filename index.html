@@ -1,547 +1,821 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Find the Impostor — Manual Mode Customizable</title>
-  <style>
-    :root{--bg:#071029;--card:#0b1220;--accent:#60a5fa;--muted:#94a3b8}
-    *{box-sizing:border-box;font-family:Inter,system-ui,Arial,sans-serif}
-    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#071029,#0b1220);color:#e6eef8;padding:18px}
-    .wrap{max-width:960px;margin:0 auto}
-    .card{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;margin-top:12px}
-    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
-    input,select,textarea,button{font:inherit}
-    input[type=text],select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
-    textarea{min-height:64px}
-    .players{display:flex;flex-direction:column;gap:8px}
-    .row{display:flex;gap:8px;align-items:center}
-    .row input[type=text]{flex:1}
-    button{background:var(--accent);border:none;padding:8px 10px;border-radius:8px;color:#04243a;font-weight:700;cursor:pointer}
-    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
-    .word{padding:12px;border-radius:8px;background:rgba(255,255,255,0.02);min-height:64px;display:flex;align-items:center;justify-content:center;text-align:center}
-    .muted{color:var(--muted);font-size:13px}
-    .summary{padding:12px;border-radius:8px;background:rgba(255,255,255,0.02);margin-top:12px}
-    .small{font-size:13px}
-    .role-select{width:220px}
-    .toggles{display:flex;gap:8px;flex-wrap:wrap}
-    .toggle{background:rgba(255,255,255,0.02);Padding:8px;border-radius:8px}
-    .inline-small{width:160px}
-    .inline-smaller{width:120px}
-    .hint{font-size:12px;color:var(--muted);margin-top:6px}
-    .controls-grid{display:flex;gap:12px;align-items:end}
-  </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Find the Impostor — Manual Mode Customizable</title>
+    <style>
+        :root {
+            --bg: #071029;
+            --card: #0b1220;
+            --accent: #60a5fa;
+            --muted: #94a3b8
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: Inter, system-ui, Arial, sans-serif
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #071029, #0b1220);
+            color: #e6eef8;
+            padding: 18px
+        }
+
+        .wrap {
+            max-width: 960px;
+            margin: 0 auto
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 12px;
+            border-radius: 10px;
+            margin-top: 12px
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        input,
+        select,
+        textarea,
+        button {
+            font: inherit
+        }
+
+        input[type=text],
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            background: transparent;
+            color: inherit
+        }
+
+        textarea {
+            min-height: 64px
+        }
+
+        .players {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .row input[type=text] {
+            flex: 1
+        }
+
+        button {
+            background: var(--accent);
+            border: none;
+            padding: 8px 10px;
+            border-radius: 8px;
+            color: #04243a;
+            font-weight: 700;
+            cursor: pointer
+        }
+
+        button.ghost {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--muted)
+        }
+
+        .word {
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .summary {
+            padding: 12px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            margin-top: 12px
+        }
+
+        .small {
+            font-size: 13px
+        }
+
+        .role-select {
+            width: 220px
+        }
+
+        .toggles {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap
+        }
+
+        .toggle {
+            background: rgba(255, 255, 255, 0.02);
+            Padding: 8px;
+            border-radius: 8px
+        }
+
+        .inline-small {
+            width: 160px
+        }
+
+        .inline-smaller {
+            width: 120px
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px
+        }
+
+        .controls-grid {
+            display: flex;
+            gap: 12px;
+            align-items: end
+        }
+    </style>
 </head>
+
 <body>
-  <div class="wrap">
-    <h1>Find the Impostor</h1>
+    <div class="wrap">
+        <h1>Find the Impostor</h1>
 
-<div class="card" id="setup">
-  <label>Shared phrase (word mode)</label>
-  <input id="phrase" type="text" placeholder="e.g. Tropical Fruit">
+        <div class="card" id="setup">
+            <label>Shared phrase (word mode)</label>
+            <input id="phrase" type="text" placeholder="e.g. Tropical Fruit">
 
-  <div style="display:flex;gap:8px;margin-top:8px">
-    <div style="flex:1">
-      <label>Impostors</label>
-      <select id="impostorCount"><option>1</option><option>2</option><option>3</option></select>
+            <div style="display:flex;gap:8px;margin-top:8px">
+                <div style="flex:1">
+                    <label>Impostors</label>
+                    <select id="impostorCount">
+                        <option>1</option>
+                        <option>2</option>
+                        <option>3</option>
+                    </select>
+                </div>
+                <div style="width:220px">
+                    <label>Role mode</label>
+                    <select id="mode">
+                        <option value="random">Random</option>
+                        <option value="manual">Manual</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+                <div style="flex:1">
+                    <label>Special roles (enabled for RANDOM mode)</label>
+                    <div class="toggles" id="specialToggles">
+                        <label class="toggle"><input type="checkbox" id="enableJester" style="margin-right:8px">
+                            Jester</label>
+                        <label class="toggle"><input type="checkbox" id="enableAssassin" style="margin-right:8px">
+                            Assassin</label>
+                        <label class="toggle"><input type="checkbox" id="enableSeer" style="margin-right:8px">
+                            Seer</label>
+                        <label class="toggle"><input type="checkbox" id="enableDoubleAgent" style="margin-right:8px">
+                            Double Agent</label>
+                    </div>
+                    <div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a
+                        target to get voted out. Seer: learns about either a player (who is a special role or an
+                        impostor) or a special role. Double Agent: appears as impostor to impostors but is actually
+                        innocent. Note: By default, Assassin behaves like an impostor for what they see (they do not see
+                        the shared phrase). Other special roles still see the phrase by default unless configured
+                        manually.</div>
+                </div>
+                <div style="width:200px">
+                    <label>Controls</label>
+                    <div style="display:flex;gap:8px;">
+                        <button id="add" type="button">Add player</button>
+                        <button id="reset" class="ghost" type="button">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+                <div style="flex:1">
+                    <label>Game mode</label>
+                    <select id="gameMode">
+                        <option value="word">Word</option>
+                        <option value="question">Question</option>
+                        <option value="bluff">Bluff</option>
+                    </select>
+                    <div id="bluffHintContainer" style="margin-top:8px;display:none">
+                        <label>Bluff hint (shown to roles who don't see the phrase)</label>
+                        <input id="bluffHint" type="text" placeholder="e.g. 'Tasty & tropical' or 'Not a vegetable'">
+                        <div class="muted small" style="margin-top:6px">In Bluff mode, roles who do NOT see the shared
+                            phrase (normally impostors and assassins) will be shown this customizable hint instead of
+                            the phrase.</div>
+                    </div>
+                    <div id="questionContainer" style="margin-top:8px;display:none">
+                        <label>Question (for non-impostors)</label>
+                        <input id="questionNonImpostor" type="text" placeholder="e.g. 'What's a tropical fruit?'">
+                        <label style="margin-top:8px">Impostor question (what impostors/assassins see instead)</label>
+                        <input id="questionImpostor" type="text" placeholder="e.g. 'Give a vague-sounding answer'">
+                        <div class="muted small" style="margin-top:6px">In Question mode players answer a prompt
+                            privately. Players should not know whether they're innocent or an impostor (except special
+                            roles like Assassin/Seer/Jester who are told their role). When everyone has submitted, the
+                            non-impostor question and everyone's answers are revealed.</div>
+                    </div>
+                </div>
+                <div style="width:220px">
+                    <label>UI</label>
+                    <div class="muted small">Manual mode per-player customization is supported. Players will not be
+                        informed if a player-specific word is used — only the host summary reveals custom words.</div>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+                <div style="flex:1">
+                    <label>OpenAI generation (optional)</label>
+                    <div style="display:flex;gap:8px;margin-bottom:6px">
+                        <input id="openaiKey" type="text"
+                            placeholder="Paste your OpenAI API key (client-side use only)" />
+                        <button id="clearKey" class="ghost" type="button">Clear</button>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                        <input id="useOpenAI" type="checkbox" style="margin-right:8px"> <label
+                            style="display:inline-block">Enable generation</label>
+                    </div>
+
+                    <!-- New: model selection and auto-generate on start -->
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                        <input id="modelInput" type="text" placeholder="Model (e.g. gpt-3.5-turbo)"
+                            style="width:220px" />
+                        <label style="display:flex;align-items:center;gap:8px"><input id="generateOnStart"
+                                type="checkbox" style="margin-right:4px"> Generate on start</label>
+                    </div>
+
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+                        <input id="genPrompt" type="text"
+                            placeholder="Prompt for generator (optional — used as a base instruction)" />
+                        <button id="generateBtn" type="button">Generate</button>
+                    </div>
+                    <div class="hint">Note: The API key is used directly from your browser to call OpenAI. It is not
+                        stored by the app. If you are hosting this for others, prefer a server-side integration for
+                        safety.</div>
+                </div>
+                <div style="width:220px">
+                    <label>Other Toggles</label>
+                    <div class="toggles">
+                        <label class="toggle"><input type="checkbox" id="lightsOut" style="margin-right:8px"> Lights out
+                            (impostors can't see fellow impostors)</label>
+                    </div>
+                    <div class="muted small" style="margin-top:6px">When Lights out is enabled, impostors (and assassins
+                        treated as impostors) will not see other impostors in their 'impostors seen' list.</div>
+                </div>
+            </div>
+
+            <div class="players" id="players" style="margin-top:10px"></div>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+                <button id="startBtn" type="button">Start</button>
+            </div>
+        </div>
+
+        <div class="card" id="play" style="display:none">
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+                <div style="flex:1">
+                    <div class="muted">Current</div>
+                    <div id="current" style="font-weight:700">Player 1</div>
+                </div>
+                <div style="flex:2">
+                    <div class="word" id="word">••••••</div>
+                    <div id="questionActions" style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+                        <button id="reveal" type="button">Reveal</button>
+                        <button id="next" class="ghost" type="button" disabled>Hide & Next</button>
+                    </div>
+                </div>
+                <div style="width:140px;text-align:center">
+                    <div class="muted">Progress</div>
+                    <div id="progress">0 / 0</div>
+                </div>
+            </div>
+            <div style="margin-top:10px;display:flex;justify-content:center">
+                <button id="end" class="ghost" type="button">End Round</button>
+            </div>
+            <div id="summaryContainer"></div>
+        </div>
+
+        <footer style="margin-top:12px" class="muted">Manual mode supports host-only seer/assassin overrides and
+            per-player words. Players are not shown that a word is player-specific.</footer>
+
     </div>
-    <div style="width:220px">
-      <label>Role mode</label>
-      <select id="mode"><option value="random">Random</option><option value="manual">Manual</option></select>
-    </div>
-  </div>
 
-  <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-    <div style="flex:1">
-      <label>Special roles (enabled for RANDOM mode)</label>
-      <div class="toggles" id="specialToggles">
-        <label class="toggle"><input type="checkbox" id="enableJester" style="margin-right:8px"> Jester</label>
-        <label class="toggle"><input type="checkbox" id="enableAssassin" style="margin-right:8px"> Assassin</label>
-        <label class="toggle"><input type="checkbox" id="enableSeer" style="margin-right:8px"> Seer</label>
-        <label class="toggle"><input type="checkbox" id="enableDoubleAgent" style="margin-right:8px"> Double Agent</label>
-      </div>
-      <div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a target to get voted out. Seer: learns about either a player (who is a special role or an impostor) or a special role. Double Agent: appears as impostor to impostors but is actually innocent. Note: By default, Assassin behaves like an impostor for what they see (they do not see the shared phrase). Other special roles still see the phrase by default unless configured manually.</div>
-    </div>
-    <div style="width:200px">
-      <label>Controls</label>
-      <div style="display:flex;gap:8px;">
-        <button id="add" type="button">Add player</button>
-        <button id="reset" class="ghost" type="button">Reset</button>
-      </div>
-    </div>
-  </div>
+    <script>
+        // --- state ---
+        let players = [];
+        let idc = 1;
+        let roles = [];
+        let current = 0;
+        let assassinTargets = {};
+        let allViewed = false;
 
-  <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-    <div style="flex:1">
-      <label>Game mode</label>
-      <select id="gameMode"><option value="word">Word</option><option value="question">Question</option><option value="bluff">Bluff</option></select>
-      <div id="bluffHintContainer" style="margin-top:8px;display:none">
-        <label>Bluff hint (shown to roles who don't see the phrase)</label>
-        <input id="bluffHint" type="text" placeholder="e.g. 'Tasty & tropical' or 'Not a vegetable'">
-        <div class="muted small" style="margin-top:6px">In Bluff mode, roles who do NOT see the shared phrase (normally impostors and assassins) will be shown this customizable hint instead of the phrase.</div>
-      </div>
-      <div id="questionContainer" style="margin-top:8px;display:none">
-        <label>Question (for non-impostors)</label>
-        <input id="questionNonImpostor" type="text" placeholder="e.g. 'What's a tropical fruit?'">
-        <label style="margin-top:8px">Impostor question (what impostors/assassins see instead)</label>
-        <input id="questionImpostor" type="text" placeholder="e.g. 'Give a vague-sounding answer'">
-        <div class="muted small" style="margin-top:6px">In Question mode players answer a prompt privately. Players should not know whether they're innocent or an impostor (except special roles like Assassin/Seer/Jester who are told their role). When everyone has submitted, the non-impostor question and everyone's answers are revealed.</div>
-      </div>
-    </div>
-    <div style="width:220px">
-      <label>UI</label>
-      <div class="muted small">Manual mode per-player customization is supported. Players will not be informed if a player-specific word is used — only the host summary reveals custom words.</div>
-    </div>
-  </div>
+        let questionNonImpostor = '';
+        let questionImpostor = '';
 
-  <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-    <div style="flex:1">
-      <label>OpenAI generation (optional)</label>
-      <div style="display:flex;gap:8px;margin-bottom:6px">
-        <input id="openaiKey" type="text" placeholder="Paste your OpenAI API key (client-side use only)" />
-        <button id="clearKey" class="ghost" type="button">Clear</button>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-        <input id="useOpenAI" type="checkbox" style="margin-right:8px"> <label style="display:inline-block">Enable generation</label>
-      </div>
 
-      <!-- New: model selection and auto-generate on start -->
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-        <input id="modelInput" type="text" placeholder="Model (e.g. gpt-3.5-turbo)" style="width:220px" />
-        <label style="display:flex;align-items:center;gap:8px"><input id="generateOnStart" type="checkbox" style="margin-right:4px"> Generate on start</label>
-      </div>
+        const playersEl = document.getElementById('players');
+        const addBtn = document.getElementById('add');
+        const resetBtn = document.getElementById('reset');
+        const startBtn = document.getElementById('startBtn');
+        const playCard = document.getElementById('play');
+        const setupCard = document.getElementById('setup');
+        const currentLabel = document.getElementById('current');
+        const wordBox = document.getElementById('word');
+        const revealBtn = document.getElementById('reveal');
+        const nextBtn = document.getElementById('next');
+        const progress = document.getElementById('progress');
+        const endBtn = document.getElementById('end');
+        const summaryContainer = document.getElementById('summaryContainer');
+        const gameModeSel = document.getElementById('gameMode');
+        const bluffHintContainer = document.getElementById('bluffHintContainer');
+        const questionContainer = document.getElementById('questionContainer');
 
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
-        <input id="genPrompt" type="text" placeholder="Prompt for generator (optional — used as a base instruction)" />
-        <button id="generateBtn" type="button">Generate</button>
-      </div>
-      <div class="hint">Note: The API key is used directly from your browser to call OpenAI. It is not stored by the app. If you are hosting this for others, prefer a server-side integration for safety.</div>
-    </div>
-    <div style="width:220px">
-      <label>Other Toggles</label>
-      <div class="toggles">
-        <label class="toggle"><input type="checkbox" id="lightsOut" style="margin-right:8px"> Lights out (impostors can't see fellow impostors)</label>
-      </div>
-      <div class="muted small" style="margin-top:6px">When Lights out is enabled, impostors (and assassins treated as impostors) will not see other impostors in their 'impostors seen' list.</div>
-    </div>
-  </div>
+        const recentGenerations = [];
+        const MAX_HISTORY = 20; // keep last 20 to avoid repeats
 
-  <div class="players" id="players" style="margin-top:10px"></div>
+        const openaiKeyInput = document.getElementById('openaiKey');
+        const useOpenAI = document.getElementById('useOpenAI');
+        const genPrompt = document.getElementById('genPrompt');
+        const generateBtn = document.getElementById('generateBtn');
+        const clearKey = document.getElementById('clearKey');
+        const lightsOutEl = document.getElementById('lightsOut');
+        const modelInput = document.getElementById('modelInput');
+        const generateOnStartEl = document.getElementById('generateOnStart');
 
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-    <button id="startBtn" type="button">Start</button>
-  </div>
-</div>
+        // --- helpers ---
+        function pick(n, k) { const a = [...Array(n).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, Math.min(k, a.length)); }
+        function pickFromArray(arr) { if (!arr || arr.length === 0) return null; return arr[Math.floor(Math.random() * arr.length)]; }
 
-<div class="card" id="play" style="display:none">
-  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-    <div style="flex:1">
-      <div class="muted">Current</div>
-      <div id="current" style="font-weight:700">Player 1</div>
-    </div>
-    <div style="flex:2">
-      <div class="word" id="word">••••••</div>
-      <div id="questionActions" style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-        <button id="reveal" type="button">Reveal</button>
-        <button id="next" class="ghost" type="button" disabled>Hide & Next</button>
-      </div>
-    </div>
-    <div style="width:140px;text-align:center">
-      <div class="muted">Progress</div>
-      <div id="progress">0 / 0</div>
-    </div>
-  </div>
-  <div style="margin-top:10px;display:flex;justify-content:center">
-    <button id="end" class="ghost" type="button">End Round</button>
-  </div>
-  <div id="summaryContainer"></div>
-</div>
+        function escapeHtml(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
 
-<footer style="margin-top:12px" class="muted">Manual mode supports host-only seer/assassin overrides and per-player words. Players are not shown that a word is player-specific.</footer>
+        // whether a role should be treated as an impostor for viewing phrase / impostor lists
+        function roleIsTreatedAsImpostor(r) { return r === 'impostor' || r === 'assassin'; }
 
-  </div>
-
-  <script>
-    // --- state ---
-    let players = [];
-    let idc = 1;
-    let roles = [];
-    let current = 0;
-    let assassinTargets = {};
-    let allViewed = false;
-
-    let questionNonImpostor = '';
-    let questionImpostor = '';
-
-    const playersEl = document.getElementById('players');
-    const addBtn = document.getElementById('add');
-    const resetBtn = document.getElementById('reset');
-    const startBtn = document.getElementById('startBtn');
-    const playCard = document.getElementById('play');
-    const setupCard = document.getElementById('setup');
-    const currentLabel = document.getElementById('current');
-    const wordBox = document.getElementById('word');
-    const revealBtn = document.getElementById('reveal');
-    const nextBtn = document.getElementById('next');
-    const progress = document.getElementById('progress');
-    const endBtn = document.getElementById('end');
-    const summaryContainer = document.getElementById('summaryContainer');
-    const gameModeSel = document.getElementById('gameMode');
-    const bluffHintContainer = document.getElementById('bluffHintContainer');
-    const questionContainer = document.getElementById('questionContainer');
-
-    const openaiKeyInput = document.getElementById('openaiKey');
-    const useOpenAI = document.getElementById('useOpenAI');
-    const genPrompt = document.getElementById('genPrompt');
-    const generateBtn = document.getElementById('generateBtn');
-    const clearKey = document.getElementById('clearKey');
-    const lightsOutEl = document.getElementById('lightsOut');
-    const modelInput = document.getElementById('modelInput');
-    const generateOnStartEl = document.getElementById('generateOnStart');
-
-    // --- helpers ---
-    function pick(n,k){ const a = [...Array(n).keys()]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a.slice(0,Math.min(k,a.length)); }
-    function pickFromArray(arr){ if(!arr || arr.length===0) return null; return arr[Math.floor(Math.random()*arr.length)]; }
-
-    function escapeHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-
-    // whether a role should be treated as an impostor for viewing phrase / impostor lists
-    function roleIsTreatedAsImpostor(r){ return r === 'impostor' || r === 'assassin'; }
-
-    function getImpostorViewNames(forIndex){
-      // if lights out enabled, impostors see no fellow impostors
-      if(lightsOutEl.checked) return [];
-      return roles.map((r,i)=>{ if((r==='impostor' || r==='doubleAgent') && i!==forIndex) return players[i].name || ('Player '+(i+1)); return null; }).filter(Boolean);
-    }
-
-    // --- rendering players list and manual controls ---
-    function render(){
-      playersEl.innerHTML = '';
-      players.forEach((p,i)=>{
-        const row = document.createElement('div'); row.className='row';
-        const input = document.createElement('input'); input.type='text'; input.value=p.name; input.placeholder='Player name'; input.addEventListener('input',e=>{ p.name=e.target.value; });
-        row.appendChild(input);
-
-        const mode = document.getElementById('mode').value;
-        const select = document.createElement('select'); select.className='role-select';
-        const opts = ['normal','impostor','jester','assassin','seer','doubleAgent'];
-        opts.forEach(o=>{ const el = document.createElement('option'); el.value=o; el.textContent = o.charAt(0).toUpperCase() + o.slice(1); select.appendChild(el); });
-        select.value = p.selectedRole || 'normal';
-        select.style.display = mode==='manual' ? 'inline-block' : 'none';
-        select.addEventListener('change', e=>{ p.selectedRole = e.target.value; render(); });
-        row.appendChild(select);
-
-        if(mode==='manual'){
-          // If player is an ASSASSIN, allow choosing a specific target
-          if((p.selectedRole || 'normal') === 'assassin'){
-            const tsel = document.createElement('select'); tsel.className='inline-small';
-            const noneOpt = document.createElement('option'); noneOpt.value='-1'; noneOpt.textContent='Target: —None—'; tsel.appendChild(noneOpt);
-            players.forEach((pp,ii)=>{ const o = document.createElement('option'); o.value=String(ii); o.textContent = (pp.name||('Player '+(ii+1))); tsel.appendChild(o); });
-            tsel.value = (typeof p.selectedTargetIndex === 'number')? String(p.selectedTargetIndex) : '-1';
-            tsel.addEventListener('change', e=>{ p.selectedTargetIndex = parseInt(e.target.value,10); if(p.selectedTargetIndex===-1) p.selectedTargetIndex = null; });
-            row.appendChild(tsel);
-          }
-
-          // If player is a SEER, allow overriding: choose mode (auto/player/role), then show appropriate inputs
-          if((p.selectedRole || 'normal') === 'seer'){
-            const modeSel = document.createElement('select'); modeSel.className='inline-smaller';
-            ['(auto)','player','role'].forEach(o=>{ const el=document.createElement('option'); el.value=o; el.textContent = o==='(auto)'? 'Seer: Auto' : (o==='player'? 'Seer: Player' : 'Seer: Role'); modeSel.appendChild(el); });
-            modeSel.value = p.seerMode || '(auto)';
-            modeSel.addEventListener('change', e=>{ p.seerMode = e.target.value; render(); });
-            row.appendChild(modeSel);
-
-            // player selector
-            const psel = document.createElement('select'); psel.className='inline-small';
-            const noneP = document.createElement('option'); noneP.value='-1'; noneP.textContent='Player: —None—'; psel.appendChild(noneP);
-            players.forEach((pp,ii)=>{ const o = document.createElement('option'); o.value=String(ii); o.textContent = (pp.name||('Player '+(ii+1))); psel.appendChild(o); });
-            psel.value = (typeof p.seerRevealPlayerIndex === 'number')? String(p.seerRevealPlayerIndex) : '-1';
-            psel.addEventListener('change', e=>{ p.seerRevealPlayerIndex = parseInt(e.target.value,10); if(p.seerRevealPlayerIndex===-1) p.seerRevealPlayerIndex = null; });
-            psel.style.display = (p.seerMode === 'player') ? 'inline-block' : 'none';
-            row.appendChild(psel);
-
-            // role choice
-            const rsel = document.createElement('select'); rsel.className='inline-small';
-            const roleOpts = ['(none)','impostor','jester','assassin','doubleAgent'];
-            roleOpts.forEach(o=>{ const el = document.createElement('option'); el.value = o; el.textContent = o === '(none)' ? 'Seer: —None—' : 'Seer: ' + (o.charAt(0).toUpperCase()+o.slice(1)); rsel.appendChild(el); });
-            rsel.value = p.seerRevealRole || '(none)';
-            rsel.style.display = (p.seerMode === 'role') ? 'inline-block' : 'none';
-            rsel.addEventListener('change', e=>{ p.seerRevealRole = e.target.value; });
-            row.appendChild(rsel);
-          }
-
-          // Per-player word input for roles that get the shared phrase
-          const selectedRole = (p.selectedRole || 'normal');
-          // Assassin behaves like impostor for phrase visibility, so they SHOULD NOT have a per-player word by default
-          const getsPhrase = ['normal','jester','seer','doubleAgent'].includes(selectedRole);
-          if(getsPhrase){
-            const cw = document.createElement('input');
-            cw.type = 'text'; cw.placeholder = 'Optional (host use only)';
-            cw.value = p.customWord || '';
-            cw.style.width = '220px';
-            cw.addEventListener('input', e => { p.customWord = e.target.value; });
-            row.appendChild(cw);
-          }
+        function getImpostorViewNames(forIndex) {
+            // if lights out enabled, impostors see no fellow impostors
+            if (lightsOutEl.checked) return [];
+            return roles.map((r, i) => { if ((r === 'impostor' || r === 'doubleAgent') && i !== forIndex) return players[i].name || ('Player ' + (i + 1)); return null; }).filter(Boolean);
         }
 
-        const rm = document.createElement('button'); rm.className='ghost'; rm.textContent='Remove'; rm.type='button'; rm.addEventListener('click',()=>{players.splice(i,1);render();});
-        row.appendChild(rm);
-        playersEl.appendChild(row);
-      });
-      progress.textContent = (players.length ? (current+1) : 0) + ' / ' + Math.max(players.length,0);
-    }
+        // --- rendering players list and manual controls ---
+        function render() {
+            playersEl.innerHTML = '';
+            players.forEach((p, i) => {
+                const row = document.createElement('div'); row.className = 'row';
+                const input = document.createElement('input'); input.type = 'text'; input.value = p.name; input.placeholder = 'Player name'; input.addEventListener('input', e => { p.name = e.target.value; });
+                row.appendChild(input);
 
-    addBtn.addEventListener('click',()=>{ players.push({id:idc++,name:'Player '+(players.length+1)}); render(); });
-    resetBtn.addEventListener('click',()=>{ players = []; idc=1; for(let i=0;i<4;i++) players.push({id:idc++,name:'Player '+(i+1)}); render(); });
-    document.getElementById('mode').addEventListener('change',render);
-    resetBtn.click();
+                const mode = document.getElementById('mode').value;
+                const select = document.createElement('select'); select.className = 'role-select';
+                const opts = ['normal', 'impostor', 'jester', 'assassin', 'seer', 'doubleAgent'];
+                opts.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o.charAt(0).toUpperCase() + o.slice(1); select.appendChild(el); });
+                select.value = p.selectedRole || 'normal';
+                select.style.display = mode === 'manual' ? 'inline-block' : 'none';
+                select.addEventListener('change', e => { p.selectedRole = e.target.value; render(); });
+                row.appendChild(select);
 
-    gameModeSel.addEventListener('change',()=>{
-      bluffHintContainer.style.display = gameModeSel.value==='bluff' ? 'block' : 'none';
-      questionContainer.style.display = gameModeSel.value==='question' ? 'block' : 'none';
-    });
+                if (mode === 'manual') {
+                    // If player is an ASSASSIN, allow choosing a specific target
+                    if ((p.selectedRole || 'normal') === 'assassin') {
+                        const tsel = document.createElement('select'); tsel.className = 'inline-small';
+                        const noneOpt = document.createElement('option'); noneOpt.value = '-1'; noneOpt.textContent = 'Target: —None—'; tsel.appendChild(noneOpt);
+                        players.forEach((pp, ii) => { const o = document.createElement('option'); o.value = String(ii); o.textContent = (pp.name || ('Player ' + (ii + 1))); tsel.appendChild(o); });
+                        tsel.value = (typeof p.selectedTargetIndex === 'number') ? String(p.selectedTargetIndex) : '-1';
+                        tsel.addEventListener('change', e => { p.selectedTargetIndex = parseInt(e.target.value, 10); if (p.selectedTargetIndex === -1) p.selectedTargetIndex = null; });
+                        row.appendChild(tsel);
+                    }
 
-    clearKey.addEventListener('click',()=>{ openaiKeyInput.value=''; });
+                    // If player is a SEER, allow overriding: choose mode (auto/player/role), then show appropriate inputs
+                    if ((p.selectedRole || 'normal') === 'seer') {
+                        const modeSel = document.createElement('select'); modeSel.className = 'inline-smaller';
+                        ['(auto)', 'player', 'role'].forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o === '(auto)' ? 'Seer: Auto' : (o === 'player' ? 'Seer: Player' : 'Seer: Role'); modeSel.appendChild(el); });
+                        modeSel.value = p.seerMode || '(auto)';
+                        modeSel.addEventListener('change', e => { p.seerMode = e.target.value; render(); });
+                        row.appendChild(modeSel);
 
-    // --- simplified OpenAI (system-message + optional user hint) ---
-async function callOpenAI(model, key, systemMsg, userMsg = null){
-  if(!key) throw new Error('No OpenAI API key provided');
-  const messages = [
-    { role: 'system', content: systemMsg || '' }
-  ];
-  // If the host provided a hint/prompt, send it as a user message (doesn't replace system)
-  if(userMsg && String(userMsg).trim()){
-    messages.push({ role: 'user', content: String(userMsg).trim() });
-  }
+                        // player selector
+                        const psel = document.createElement('select'); psel.className = 'inline-small';
+                        const noneP = document.createElement('option'); noneP.value = '-1'; noneP.textContent = 'Player: —None—'; psel.appendChild(noneP);
+                        players.forEach((pp, ii) => { const o = document.createElement('option'); o.value = String(ii); o.textContent = (pp.name || ('Player ' + (ii + 1))); psel.appendChild(o); });
+                        psel.value = (typeof p.seerRevealPlayerIndex === 'number') ? String(p.seerRevealPlayerIndex) : '-1';
+                        psel.addEventListener('change', e => { p.seerRevealPlayerIndex = parseInt(e.target.value, 10); if (p.seerRevealPlayerIndex === -1) p.seerRevealPlayerIndex = null; });
+                        psel.style.display = (p.seerMode === 'player') ? 'inline-block' : 'none';
+                        row.appendChild(psel);
 
-  const body = {
-    model: model || 'gpt-3.5-turbo',
-    messages: messages,
-    max_tokens: 120,
-    temperature: 0.8
-  };
+                        // role choice
+                        const rsel = document.createElement('select'); rsel.className = 'inline-small';
+                        const roleOpts = ['(none)', 'impostor', 'jester', 'assassin', 'doubleAgent'];
+                        roleOpts.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o === '(none)' ? 'Seer: —None—' : 'Seer: ' + (o.charAt(0).toUpperCase() + o.slice(1)); rsel.appendChild(el); });
+                        rsel.value = p.seerRevealRole || '(none)';
+                        rsel.style.display = (p.seerMode === 'role') ? 'inline-block' : 'none';
+                        rsel.addEventListener('change', e => { p.seerRevealRole = e.target.value; });
+                        row.appendChild(rsel);
+                    }
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-    body: JSON.stringify(body)
-  });
+                    // Per-player word input for roles that get the shared phrase
+                    const selectedRole = (p.selectedRole || 'normal');
+                    // Assassin behaves like impostor for phrase visibility, so they SHOULD NOT have a per-player word by default
+                    const getsPhrase = ['normal', 'jester', 'seer', 'doubleAgent'].includes(selectedRole);
+                    if (getsPhrase) {
+                        const cw = document.createElement('input');
+                        cw.type = 'text'; cw.placeholder = 'Optional (host use only)';
+                        cw.value = p.customWord || '';
+                        cw.style.width = '220px';
+                        cw.addEventListener('input', e => { p.customWord = e.target.value; });
+                        row.appendChild(cw);
+                    }
+                }
 
-  if(!res.ok){
-    const t = await res.text();
-    throw new Error('OpenAI error: ' + t);
-  }
-  const data = await res.json();
-  const text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
-    ? data.choices[0].message.content.trim()
-    : '';
-  return text;
-}
-
-async function generateForCurrentMode(manualHint){
-  if(!useOpenAI.checked) throw new Error('OpenAI generation not enabled');
-  const key = openaiKeyInput.value.trim();
-  if(!key) throw new Error('No OpenAI API key provided');
-  const model = (modelInput.value && modelInput.value.trim()) ? modelInput.value.trim() : 'gpt-3.5-turbo';
-  const mode = document.getElementById('gameMode').value;
-
-  // build the fixed system message per mode (host hint should NOT replace this)
-  let systemMsg = '';
-  if(mode === 'word'){
-    systemMsg = [
-      'You are a concise party-game content generator for WORD mode.',
-      'Return EXACTLY ONE LINE and NOTHING ELSE: a single proper noun/title (e.g., exact video game title, character name, movie/TV title, city/place, landmark, musician/band) or a simple common noun (e.g lion, glue, pencil etc).',
-      'One line only, no extra commentary.'
-    ].join(' ');
-  } else if(mode === 'bluff'){
-    systemMsg = [
-      'You are a concise party-game generator for BLUFF mode.',
-      'Return EXACTLY TWO LINES and NOTHING ELSE.',
-      'Line 1: the secret phrase (a single proper noun/title (e.g., exact video game title, character name, movie/TV title, city/place, landmark, musician/band) or a simple common noun (e.g lion, glue, pencil etc)).',
-      'Line 2: a short bluff hint (1–6 words) that does NOT contain any words from the secret phrase or close synonyms; it should be vague and sensory so impostors can bluff.',
-      'Two lines only, no extra commentary.'
-    ].join(' ');
-  } else if(mode === 'question'){
-    systemMsg = [
-      'You are a concise party-game generator for QUESTION mode.',
-      'Return EXACTLY TWO LINES and NOTHING ELSE.',
-      'Line 1: a non-impostor question (6–14 words) that invites concrete personal details/facts (so friends could detect inconsistencies).',
-      'Line 2: an impostor prompt (6–12 words) that is related but different to the non-impostor question, and should be able to blend in with non-impostor answers.',
-      'Two lines only, no extra commentary.'
-    ].join(' ');
-  } else {
-    systemMsg = 'You are a concise party-game content generator. Return EXACTLY ONE LINE only: a short phrase or single proper noun/title. One line only.';
-  }
-
-  // manualHint is now sent as a user message (a nudge), not a system override
-  const raw = await callOpenAI(model, key, systemMsg, manualHint && manualHint.trim() ? manualHint.trim() : null);
-
-  // split returned text into non-empty lines
-  const lines = raw.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-
-  if(mode === 'word'){
-    const phrase = lines[0] || raw;
-    document.getElementById('phrase').value = phrase;
-    return { phrase };
-  } else if(mode === 'bluff'){
-    let phrase = lines[0] || '';
-    let hint = lines[1] || '';
-    if(!hint && phrase && /[|—–\/-]/.test(phrase)){
-      const parts = phrase.split(/[|—–\-\/]/).map(s=>s.trim()).filter(Boolean);
-      if(parts.length >= 2) { phrase = parts[0]; hint = parts[1]; }
-    }
-    document.getElementById('phrase').value = phrase || '';
-    document.getElementById('bluffHint').value = hint || '';
-    return { phrase, bluffHint: hint };
-  } else if(mode === 'question'){
-    let nonText = lines[0] || '';
-    let impText = lines[1] || '';
-    document.getElementById('questionNonImpostor').value = nonText;
-    document.getElementById('questionImpostor').value = impText;
-    return { questionNon: nonText, questionImp: impText };
-  } else {
-    const phrase = lines[0] || raw;
-    document.getElementById('phrase').value = phrase;
-    return { phrase };
-  }
-}
-
-    generateBtn.addEventListener('click', async ()=>{
-      if(!useOpenAI.checked){ alert('Enable generation first (checkbox)'); return; }
-      const key = openaiKeyInput.value.trim();
-      if(!key){ alert('Please paste your OpenAI API key'); return; }
-      const prompt = genPrompt.value.trim();
-      generateBtn.disabled = true; generateBtn.textContent = 'Generating...';
-      try{
-        await generateForCurrentMode(prompt);
-        alert('Generated and inserted into the form.');
-      } catch(e){
-        alert('Generation failed: '+e.message);
-      } finally{
-        generateBtn.disabled = false; generateBtn.textContent = 'Generate';
-      }
-    });
-
-    // --- game start ---
-    startBtn.addEventListener('click', async ()=>{
-      if(players.length<2){ alert('Need at least 2 players'); return; }
-
-      // If user wants generation on start and generation is enabled, attempt it first (but don't block start permanently)
-      if(generateOnStartEl.checked && useOpenAI.checked){
-        if(!openaiKeyInput.value.trim()){
-          // no key: warn and continue
-          if(!confirm('Generate on start is enabled but no OpenAI API key is present. Continue without generation?')) return;
-        } else {
-          startBtn.disabled = true; startBtn.textContent = 'Generating...';
-          try{
-            await generateForCurrentMode(genPrompt.value.trim());
-            // success — we continue to start
-          } catch(e){
-            alert('Generation on start failed: '+e.message + '\nStarting game without generated content.');
-          } finally {
-            startBtn.disabled = false; startBtn.textContent = 'Start';
-          }
-        }
-      }
-
-      const impostorCount = parseInt(document.getElementById('impostorCount').value,10);
-      const mode = document.getElementById('mode').value;
-      const enabled = {
-        jester: document.getElementById('enableJester').checked,
-        assassin: document.getElementById('enableAssassin').checked,
-        seer: document.getElementById('enableSeer').checked,
-        doubleAgent: document.getElementById('enableDoubleAgent').checked
-      };
-
-      questionNonImpostor = document.getElementById('questionNonImpostor').value.trim();
-      questionImpostor = document.getElementById('questionImpostor').value.trim();
-
-      // initialize roles and answers
-      roles = Array(players.length).fill('normal');
-      assassinTargets = {};
-      allViewed = false;
-      players.forEach(p=>{ p.answer = null; });
-
-      if(mode==='random'){
-        // pick impostors
-        const impostorIndices = pick(players.length, impostorCount);
-        impostorIndices.forEach(i=>roles[i]='impostor');
-
-        // If Assassin is enabled: replace one of the impostors with the Assassin role (so Assassin takes an impostor slot)
-        if(enabled.assassin && impostorIndices.length>0){
-          const replaceIdx = pickFromArray(impostorIndices);
-          if(replaceIdx != null){
-            roles[replaceIdx] = 'assassin';
-            // remove that index from impostorIndices array (it's no longer an impostor)
-            const pos = impostorIndices.indexOf(replaceIdx);
-            if(pos > -1) impostorIndices.splice(pos,1);
-          }
+                const rm = document.createElement('button'); rm.className = 'ghost'; rm.textContent = 'Remove'; rm.type = 'button'; rm.addEventListener('click', () => { players.splice(i, 1); render(); });
+                row.appendChild(rm);
+                playersEl.appendChild(row);
+            });
+            progress.textContent = (players.length ? (current + 1) : 0) + ' / ' + Math.max(players.length, 0);
         }
 
-        // Build pool of non-impostor indices for assigning other special roles
-        let pool = [...Array(players.length).keys()].filter(i=>roles[i]!=='impostor' && roles[i]!=='assassin');
+        addBtn.addEventListener('click', () => { players.push({ id: idc++, name: 'Player ' + (players.length + 1) }); render(); });
+        resetBtn.addEventListener('click', () => { players = []; idc = 1; for (let i = 0; i < 4; i++) players.push({ id: idc++, name: 'Player ' + (i + 1) }); render(); });
+        document.getElementById('mode').addEventListener('change', render);
+        resetBtn.click();
 
-        function assignRole(name){ if(!enabled[name]) return null; if(pool.length===0) return null; const idx = pool.splice(Math.floor(Math.random()*pool.length),1)[0]; roles[idx]=name; return idx; }
-
-        // assign the remaining special roles from the pool (jester, seer, doubleAgent)
-        assignRole('jester');
-        assignRole('seer');
-        assignRole('doubleAgent');
-
-        // For any assassin(s) present, pick targets
-        const assassinIdxs = roles.map((r,i)=> r==='assassin'?i:-1).filter(i=>i!==-1);
-        assassinIdxs.forEach(ai=>{
-          const possibleTargets = [...Array(players.length).keys()].filter(i=>i!==ai);
-          assassinTargets[ai] = pickFromArray(possibleTargets);
+        gameModeSel.addEventListener('change', () => {
+            bluffHintContainer.style.display = gameModeSel.value === 'bluff' ? 'block' : 'none';
+            questionContainer.style.display = gameModeSel.value === 'question' ? 'block' : 'none';
         });
 
-      } else {
-        players.forEach((p,i)=>{ roles[i] = p.selectedRole || 'normal'; });
-        const assassinIndices = roles.map((r,i)=>r==='assassin'?i:-1).filter(i=>i!==-1);
-        assassinIndices.forEach(ai=>{ const p = players[ai]; if(typeof p.selectedTargetIndex === 'number'){ assassinTargets[ai] = p.selectedTargetIndex; } else { const possibleTargets = [...Array(players.length).keys()].filter(i=>i!==ai); assassinTargets[ai] = pickFromArray(possibleTargets); } });
-      }
+        clearKey.addEventListener('click', () => { openaiKeyInput.value = ''; });
 
-      current = 0; summaryContainer.innerHTML=''; setupCard.style.display='none'; playCard.style.display='block'; updatePlay();
-    });
+        // --- simplified OpenAI (system-message + optional user hint) ---
+        async function callOpenAI(model, key, systemMsg, userMsg = null) {
+            if (!key) throw new Error('No OpenAI API key provided');
 
-    function updatePlay(){
-      if(allViewed){
-        currentLabel.textContent = 'All players submitted';
-        wordBox.innerHTML = '<div class="muted small">All players have submitted their answers. Click "End Round" to reveal final roles and return to setup.</div>';
-        revealBtn.disabled = true; nextBtn.disabled = true; progress.textContent = players.length + ' / ' + players.length;
-        return;
-      }
+            const messages = [
+                { role: 'system', content: systemMsg || '' }
+            ];
 
-      const mode = document.getElementById('gameMode').value;
-      currentLabel.textContent = (players[current].name || ('Player '+(current+1))) + ' (Player '+(current+1)+')';
-      progress.textContent=(current+1)+' / '+players.length;
-      revealBtn.disabled=false; nextBtn.disabled=true;
-      wordBox.textContent='••••••';
-      revealBtn.textContent = mode === 'question' ? 'Open (answer)' : 'Reveal';
-    }
+            if (userMsg && String(userMsg).trim()) {
+                messages.push({ role: 'developer', content: String(userMsg).trim() });
+            }
 
-    revealBtn.addEventListener('click',()=>{
-      const phrase = document.getElementById('phrase').value.trim() || '—';
-      const role = roles[current];
-      const gameMode = document.getElementById('gameMode').value;
-      const bluffHint = document.getElementById('bluffHint').value.trim() || '—';
-      const p = players[current];
+            const body = {
+                model: model || 'gpt-4o',
+                messages: messages,
+                max_tokens: 200,
+                temperature: 0.9,
+                top_p: 0.95,
+                frequency_penalty: 0.4,
+                presence_penalty: 0.8
+            };
 
-      // QUESTION MODE
-      if(gameMode === 'question'){
-        // compose UI: show role only if special (assassin/seer/jester)
-        let roleLabel = '';
-        if(role === 'assassin' || role === 'seer' || role === 'jester'){
-          roleLabel = `<div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">${escapeHtml(role.charAt(0).toUpperCase()+role.slice(1))}</div>`;
-        } else {
-          // do not reveal innocent vs impostor
-          roleLabel = `<div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">—</div>`;
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + key
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error('OpenAI error: ' + t);
+            }
+
+            const data = await res.json();
+            const text = data?.choices?.[0]?.message?.content?.trim() || '';
+            return text;
         }
 
-        // which question to show: impostor question for impostors and assassins, otherwise non-impostor question
-        const qText = (roleIsTreatedAsImpostor(role)) ? (questionImpostor || '—') : (questionNonImpostor || '—');
+        const DEFAULT_MODEL = 'gpt-4o';
+        const DEFAULT_MAX_TOKENS = 200;
+        const MAX_ATTEMPTS = 3;
 
-        if(p.answer != null){
-          wordBox.innerHTML = `
+        async function callOpenAI({ model = DEFAULT_MODEL, key, systemMsg = '', manualHint = null, max_tokens = DEFAULT_MAX_TOKENS, temperature = 0.9, top_p = 0.95, frequency_penalty = 0.4, presence_penalty = 0.8 } = {}) {
+            if (!key) throw new Error('No OpenAI API key provided');
+
+            // If a manual hint is provided, append it to the system message to make it high priority
+            let finalSystem = String(systemMsg || '').trim();
+            if (manualHint && String(manualHint).trim()) {
+                finalSystem += `\n\nUSER INSTRUCTION (follow exactly): ${String(manualHint).trim()}`;
+            }
+
+            const body = {
+                model,
+                messages: [{ role: 'system', content: finalSystem }],
+                max_tokens,
+                temperature,
+                top_p,
+                frequency_penalty,
+                presence_penalty
+            };
+
+            const res = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + key
+                },
+                body: JSON.stringify(body)
+            });
+
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error('OpenAI error: ' + t);
+            }
+
+            const data = await res.json();
+            return data?.choices?.[0]?.message?.content?.trim() || '';
+        }
+
+        /* ---------- Generator for different game modes ---------- */
+        /* Expects globals (same as original):
+           - recentGenerations: array of lowercased strings used as anti-repeat history
+           - MAX_HISTORY: maximum history length (or set locally if absent)
+           - useOpenAI (checkbox element) and DOM elements used for outputs
+        */
+        async function generateForCurrentMode(manualHint) {
+            // Optional guard if the host uses a checkbox to enable OpenAI usage
+            if (typeof useOpenAI !== 'undefined' && useOpenAI && useOpenAI.checked === false) {
+                throw new Error('OpenAI generation not enabled');
+            }
+
+            const key = (typeof openaiKeyInput !== 'undefined' && openaiKeyInput.value) ? openaiKeyInput.value.trim() : (window.OPENAI_KEY || '').trim();
+            if (!key) throw new Error('No OpenAI API key provided');
+
+            const model = (typeof modelInput !== 'undefined' && modelInput.value) ? modelInput.value.trim() : DEFAULT_MODEL;
+            const mode = (document.getElementById('gameMode')?.value || 'default').toLowerCase();
+
+            // Build anti-repeat text if there is history
+            const history = Array.isArray(window.recentGenerations) ? window.recentGenerations : (window.recentGenerations = []);
+            const maxHistory = typeof window.MAX_HISTORY === 'number' ? window.MAX_HISTORY : 50;
+
+            const avoidText = history.length
+                ? `DO NOT use any of the following previously used prompts:\n${history.join(', ')}. Generate a different category from the last prompt in the list (e.g if it's a landmark, generate a video game, if it's a food question, generate a friendship question etc).`
+                : '';
+
+            // Mode templates: name -> { lines: n, system body (without avoidText) }
+            const templates = {
+                word: {
+                    lines: 1,
+                    system: `You are a concise content generator for WORD mode.
+Return EXACTLY ONE LINE and NOTHING ELSE:
+A single proper noun/title OR a simple common noun.
+One line only. No commentary.`
+                },
+                bluff: {
+                    lines: 2,
+                    system: `You are a concise generator for BLUFF mode.
+Return EXACTLY TWO LINES and NOTHING ELSE.
+Line 1: a single proper noun/title OR a simple common noun for non-impostors.
+Line 2: a short, vague category hint (1–6 words) to help impostors bluff.
+Two lines only. No commentary.`
+                },
+                question: {
+                    lines: 2,
+                    system: `You are a concise generator for QUESTION mode.
+Return EXACTLY TWO LINES and NOTHING ELSE.
+Line 1: a non-impostor question (6–14 words, subjective and opinion-based, not yes/no).
+Line 2: an impostor question (6–12 words, same topic but asks for the opposite opinion of the non-impostor question, same answer type).
+Two lines only. No commentary.`
+                },
+                default: {
+                    lines: 1,
+                    system: `You are a concise content generator.
+Return a short, relevant single-line result.
+One line only. No commentary.`
+                }
+            };
+
+            const tpl = templates[mode] || templates.default;
+            const systemMsg = `${tpl.system}\n${avoidText}`;
+
+            // Try up to MAX_ATTEMPTS to avoid duplicates from the server
+            let attempts = 0;
+            let raw = '';
+            while (attempts < MAX_ATTEMPTS) {
+                raw = await callOpenAI({ model, key, systemMsg, manualHint });
+                const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+                const candidate = (lines[0] || raw).toLowerCase();
+
+                if (!history.includes(candidate)) {
+                    // accept candidate and push to history
+                    history.push(candidate);
+                    if (history.length > maxHistory) history.shift();
+                    // update global history just in case
+                    window.recentGenerations = history;
+                    break;
+                }
+                attempts++;
+            }
+
+            if (!raw) throw new Error('Could not generate unique content.');
+
+            // Normalize output lines (non-empty)
+            const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+            // DOM updates & return values: keep the same element IDs as original code
+            if (mode === 'word' || tpl.lines === 1) {
+                const phrase = lines[0] || raw;
+                const el = document.getElementById('phrase');
+                if (el) el.value = phrase;
+                return { phrase };
+            }
+
+            if (mode === 'bluff') {
+                const phrase = lines[0] || '';
+                const hint = lines[1] || '';
+                const phraseEl = document.getElementById('phrase');
+                const hintEl = document.getElementById('bluffHint');
+                if (phraseEl) phraseEl.value = phrase;
+                if (hintEl) hintEl.value = hint;
+                return { phrase, bluffHint: hint };
+            }
+
+            if (mode === 'question') {
+                const nonText = lines[0] || '';
+                const impText = lines[1] || '';
+                const nonEl = document.getElementById('questionNonImpostor');
+                const impEl = document.getElementById('questionImpostor');
+                if (nonEl) nonEl.value = nonText;
+                if (impEl) impEl.value = impText;
+                return { questionNon: nonText, questionImp: impText };
+            }
+
+            // fallback single-line behavior
+            const phrase = lines[0] || raw;
+            const el = document.getElementById('phrase');
+            if (el) el.value = phrase;
+            return { phrase };
+        }
+
+
+
+        generateBtn.addEventListener('click', async () => {
+            if (!useOpenAI.checked) { alert('Enable generation first (checkbox)'); return; }
+            const key = openaiKeyInput.value.trim();
+            if (!key) { alert('Please paste your OpenAI API key'); return; }
+            const prompt = genPrompt.value.trim();
+            generateBtn.disabled = true; generateBtn.textContent = 'Generating...';
+            try {
+                await generateForCurrentMode(prompt);
+                alert('Generated and inserted into the form.');
+            } catch (e) {
+                alert('Generation failed: ' + e.message);
+            } finally {
+                generateBtn.disabled = false; generateBtn.textContent = 'Generate';
+            }
+        });
+
+        // --- game start ---
+        startBtn.addEventListener('click', async () => {
+            if (players.length < 2) { alert('Need at least 2 players'); return; }
+
+            // If user wants generation on start and generation is enabled, attempt it first (but don't block start permanently)
+            if (generateOnStartEl.checked && useOpenAI.checked) {
+                if (!openaiKeyInput.value.trim()) {
+                    // no key: warn and continue
+                    if (!confirm('Generate on start is enabled but no OpenAI API key is present. Continue without generation?')) return;
+                } else {
+                    startBtn.disabled = true; startBtn.textContent = 'Generating...';
+                    try {
+                        await generateForCurrentMode(genPrompt.value.trim());
+                        // success — we continue to start
+                    } catch (e) {
+                        alert('Generation on start failed: ' + e.message + '\nStarting game without generated content.');
+                    } finally {
+                        startBtn.disabled = false; startBtn.textContent = 'Start';
+                    }
+                }
+            }
+
+            const impostorCount = parseInt(document.getElementById('impostorCount').value, 10);
+            const mode = document.getElementById('mode').value;
+            const enabled = {
+                jester: document.getElementById('enableJester').checked,
+                assassin: document.getElementById('enableAssassin').checked,
+                seer: document.getElementById('enableSeer').checked,
+                doubleAgent: document.getElementById('enableDoubleAgent').checked
+            };
+
+            questionNonImpostor = document.getElementById('questionNonImpostor').value.trim();
+            questionImpostor = document.getElementById('questionImpostor').value.trim();
+
+            // initialize roles and answers
+            roles = Array(players.length).fill('normal');
+            assassinTargets = {};
+            allViewed = false;
+            players.forEach(p => { p.answer = null; });
+
+            if (mode === 'random') {
+                // pick impostors
+                const impostorIndices = pick(players.length, impostorCount);
+                impostorIndices.forEach(i => roles[i] = 'impostor');
+
+                // If Assassin is enabled: replace one of the impostors with the Assassin role (so Assassin takes an impostor slot)
+                if (enabled.assassin && impostorIndices.length > 0) {
+                    const replaceIdx = pickFromArray(impostorIndices);
+                    if (replaceIdx != null) {
+                        roles[replaceIdx] = 'assassin';
+                        // remove that index from impostorIndices array (it's no longer an impostor)
+                        const pos = impostorIndices.indexOf(replaceIdx);
+                        if (pos > -1) impostorIndices.splice(pos, 1);
+                    }
+                }
+
+                // Build pool of non-impostor indices for assigning other special roles
+                let pool = [...Array(players.length).keys()].filter(i => roles[i] !== 'impostor' && roles[i] !== 'assassin');
+
+                function assignRole(name) { if (!enabled[name]) return null; if (pool.length === 0) return null; const idx = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; roles[idx] = name; return idx; }
+
+                // assign the remaining special roles from the pool (jester, seer, doubleAgent)
+                assignRole('jester');
+                assignRole('seer');
+                assignRole('doubleAgent');
+
+                // For any assassin(s) present, pick targets
+                const assassinIdxs = roles.map((r, i) => r === 'assassin' ? i : -1).filter(i => i !== -1);
+                assassinIdxs.forEach(ai => {
+                    const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai);
+                    assassinTargets[ai] = pickFromArray(possibleTargets);
+                });
+
+            } else {
+                players.forEach((p, i) => { roles[i] = p.selectedRole || 'normal'; });
+                const assassinIndices = roles.map((r, i) => r === 'assassin' ? i : -1).filter(i => i !== -1);
+                assassinIndices.forEach(ai => { const p = players[ai]; if (typeof p.selectedTargetIndex === 'number') { assassinTargets[ai] = p.selectedTargetIndex; } else { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai); assassinTargets[ai] = pickFromArray(possibleTargets); } });
+            }
+
+            current = 0; summaryContainer.innerHTML = ''; setupCard.style.display = 'none'; playCard.style.display = 'block'; updatePlay();
+        });
+
+        function updatePlay() {
+            if (allViewed) {
+                currentLabel.textContent = 'All players submitted';
+                wordBox.innerHTML = '<div class="muted small">All players have submitted their answers. Click "End Round" to reveal final roles and return to setup.</div>';
+                revealBtn.disabled = true; nextBtn.disabled = true; progress.textContent = players.length + ' / ' + players.length;
+                return;
+            }
+
+            const mode = document.getElementById('gameMode').value;
+            currentLabel.textContent = (players[current].name || ('Player ' + (current + 1))) + ' (Player ' + (current + 1) + ')';
+            progress.textContent = (current + 1) + ' / ' + players.length;
+            revealBtn.disabled = false; nextBtn.disabled = true;
+            wordBox.textContent = '••••••';
+            revealBtn.textContent = mode === 'question' ? 'Open (answer)' : 'Reveal';
+        }
+
+        revealBtn.addEventListener('click', () => {
+            const phrase = document.getElementById('phrase').value.trim() || '—';
+            const role = roles[current];
+            const gameMode = document.getElementById('gameMode').value;
+            const bluffHint = document.getElementById('bluffHint').value.trim() || '—';
+            const p = players[current];
+
+            // QUESTION MODE
+            if (gameMode === 'question') {
+                // compose UI: show role only if special (assassin/seer/jester)
+                let roleLabel = '';
+                if (role === 'assassin' || role === 'seer' || role === 'jester') {
+                    roleLabel = `<div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">${escapeHtml(role.charAt(0).toUpperCase() + role.slice(1))}</div>`;
+                } else {
+                    // do not reveal innocent vs impostor
+                    roleLabel = `<div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">—</div>`;
+                }
+
+                // which question to show: impostor question for impostors and assassins, otherwise non-impostor question
+                const qText = (roleIsTreatedAsImpostor(role)) ? (questionImpostor || '—') : (questionNonImpostor || '—');
+
+                if (p.answer != null) {
+                    wordBox.innerHTML = `
             <div style="text-align:left;width:100%">
               ${roleLabel}
               <div class="muted small" style="margin-top:8px">Question</div>
@@ -550,15 +824,15 @@ async function generateForCurrentMode(manualHint){
               <div style="margin:6px 0;font-weight:700">${escapeHtml(String(p.answer))}</div>
             </div>
           `;
-          revealBtn.disabled = true; nextBtn.disabled = false;
-          if(players.every(x=>x.answer!=null)){
-            showAnswers();
-          }
-          return;
-        }
+                    revealBtn.disabled = true; nextBtn.disabled = false;
+                    if (players.every(x => x.answer != null)) {
+                        showAnswers();
+                    }
+                    return;
+                }
 
-        // show input for answer
-        wordBox.innerHTML = `
+                // show input for answer
+                wordBox.innerHTML = `
           <div style="text-align:left;width:100%">
             ${roleLabel}
             <div class="muted small" style="margin-top:8px">Question</div>
@@ -572,189 +846,190 @@ async function generateForCurrentMode(manualHint){
           </div>
         `;
 
-        revealBtn.disabled = true; nextBtn.disabled = true;
+                revealBtn.disabled = true; nextBtn.disabled = true;
 
-        document.getElementById('submitAnswer').addEventListener('click',()=>{
-          const val = document.getElementById('answerInput').value.trim();
-          players[current].answer = val;
-          if(players.every(x=>x.answer!=null)){
-            showAnswers(); allViewed = true; updatePlay(); return;
-          }
-          current++; if(current>=players.length){ allViewed = true; current = players.length - 1; }
-          updatePlay();
-        });
+                document.getElementById('submitAnswer').addEventListener('click', () => {
+                    const val = document.getElementById('answerInput').value.trim();
+                    players[current].answer = val;
+                    if (players.every(x => x.answer != null)) {
+                        showAnswers(); allViewed = true; updatePlay(); return;
+                    }
+                    current++; if (current >= players.length) { allViewed = true; current = players.length - 1; }
+                    updatePlay();
+                });
 
-        document.getElementById('skipAnswer').addEventListener('click',()=>{
-          players[current].answer = '';
-          if(players.every(x=>x.answer!=null)){
-            showAnswers(); allViewed = true; updatePlay(); return;
-          }
-          current++; if(current>=players.length){ allViewed = true; current = players.length - 1; }
-          updatePlay();
-        });
+                document.getElementById('skipAnswer').addEventListener('click', () => {
+                    players[current].answer = '';
+                    if (players.every(x => x.answer != null)) {
+                        showAnswers(); allViewed = true; updatePlay(); return;
+                    }
+                    current++; if (current >= players.length) { allViewed = true; current = players.length - 1; }
+                    updatePlay();
+                });
 
-        return;
-      }
-
-      // NON-QUESTION MODES
-      let html = '';
-
-      function getDisplayPhraseForPlayer(pIndex){
-        const r = roles[pIndex];
-        // assassins are treated like impostors and should NOT see the shared phrase
-        if(roleIsTreatedAsImpostor(r)) return null;
-        const pp = players[pIndex];
-        if(pp && typeof pp.customWord === 'string' && pp.customWord.trim() !== '') return pp.customWord.trim();
-        return phrase;
-      }
-
-      if(roleIsTreatedAsImpostor(role)){
-        const viewNames = getImpostorViewNames(current);
-        // ASSASSIN: special case — they are told their target but do not get the phrase
-        if(role === 'assassin'){
-          const t = (assassinTargets[current]!=null) ? players[assassinTargets[current]].name || ('Player '+(assassinTargets[current]+1)) : 'None';
-          if(gameMode==='bluff'){
-            html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">ASSASSIN (treated as impostor)</div>`;
-            html += `<div class="muted small" style="margin-top:8px">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(t)}</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You do NOT see the shared phrase. Instead, here is a bluff hint to help you pretend you do:</div>`;
-            html += `<div style="margin:6px 0;font-weight:700">${escapeHtml(bluffHint)}</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ')||'None')}</div>`;
-            html += `</div>`;
-          } else {
-            html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">ASSASSIN (treated as impostor)</div>`;
-            html += `<div class="muted small" style="margin-top:8px">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(t)}</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You do NOT see the shared phrase. Your goal: blend in and avoid detection.</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ')||'None')}</div>`;
-            html += `</div>`;
-          }
-        } else {
-          // normal impostor
-          const viewNames = getImpostorViewNames(current);
-          if(gameMode==='bluff'){
-            html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">IMPOSTOR</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You do NOT know the shared phrase. Instead, here is a bluff hint to help you pretend you do:</div>`;
-            html += `<div style="margin:6px 0;font-weight:700">${escapeHtml(bluffHint)}</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ')||'None')}</div>`;
-            html += `</div>`;
-          } else {
-            html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">IMPOSTOR</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You do NOT know the shared phrase. Your goal: blend in and avoid detection.</div>`;
-            html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ')||'None')}</div>`;
-            html += `</div>`;
-          }
-        }
-      } else if(role==='doubleAgent'){
-        const displayPhrase = getDisplayPhraseForPlayer(current);
-        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">DOUBLE AGENT (innocent)</div>`;
-        html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
-        html += `<div class="muted small" style="margin-top:8px">You are NOT an impostor and do NOT see impostors.</div>`;
-        html += `</div>`;
-      } else if(role==='jester'){
-        const displayPhrase = getDisplayPhraseForPlayer(current);
-        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">JESTER</div>`;
-        html += `<div class="muted small" style="margin-top:8px">Goal: get voted out. You know the shared phrase.</div>`;
-        html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
-        html += `</div>`;
-      } else if(role==='seer'){
-        // seer may get either a player or a role
-        const pState = players[current] || {};
-        let clue = '';
-
-        // manual override if in manual mode and host has set something
-        if(pState.seerMode === 'player' && typeof pState.seerRevealPlayerIndex === 'number'){
-          const prIndex = pState.seerRevealPlayerIndex; const pname = (prIndex!=null && players[prIndex]) ? (players[prIndex].name || ('Player '+(prIndex+1))) : 'None';
-          clue = `${pname} — (special role or impostor) (you do not know which)`;
-        } else if(pState.seerMode === 'role' && pState.seerRevealRole && pState.seerRevealRole !== '(none)'){
-          clue = `${pState.seerRevealRole.charAt(0).toUpperCase()+pState.seerRevealRole.slice(1)} — (a special role exists; you do not know who has it)`;
-        } else {
-          // auto: randomly decide between player/role
-          const specialList = roles.map((r,i)=>{ if(r!=='normal' && r!=='impostor') return {i,r}; return null; }).filter(Boolean).filter(x=>x.i!==current);
-          const choosePlayerFirst = Math.random() < 0.5;
-          if(choosePlayerFirst && specialList.length>0){ const pickOne = pickFromArray(specialList); clue = `${players[pickOne.i].name || ('Player '+(pickOne.i+1))} — (special role or impostor)`; }
-          else {
-            // pick a special role if exists
-            const specialRoles = [...new Set(specialList.map(x=>x.r))];
-            if(specialRoles.length>0){ const r = pickFromArray(specialRoles); clue = `${r.charAt(0).toUpperCase()+r.slice(1)} — (a special role exists; you do not know who has it)`; }
-            else {
-              // no special roles: let seer know presence/absence of impostor
-              const anyImpostor = roles.some(r=>r==='impostor');
-              clue = anyImpostor ? 'At least one impostor is present' : 'No impostors present';
+                return;
             }
-          }
+
+            // NON-QUESTION MODES
+            let html = '';
+
+            function getDisplayPhraseForPlayer(pIndex) {
+                const r = roles[pIndex];
+                // assassins are treated like impostors and should NOT see the shared phrase
+                if (roleIsTreatedAsImpostor(r)) return null;
+                const pp = players[pIndex];
+                if (pp && typeof pp.customWord === 'string' && pp.customWord.trim() !== '') return pp.customWord.trim();
+                return phrase;
+            }
+
+            if (roleIsTreatedAsImpostor(role)) {
+                const viewNames = getImpostorViewNames(current);
+                // ASSASSIN: special case — they are told their target but do not get the phrase
+                if (role === 'assassin') {
+                    const t = (assassinTargets[current] != null) ? players[assassinTargets[current]].name || ('Player ' + (assassinTargets[current] + 1)) : 'None';
+                    if (gameMode === 'bluff') {
+                        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">ASSASSIN (treated as impostor)</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(t)}</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You do NOT see the shared phrase. Instead, here is a bluff hint to help you pretend you do:</div>`;
+                        html += `<div style="margin:6px 0;font-weight:700">${escapeHtml(bluffHint)}</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ') || 'None')}</div>`;
+                        html += `</div>`;
+                    } else {
+                        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">ASSASSIN (treated as impostor)</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(t)}</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You do NOT see the shared phrase. Your goal: blend in and avoid detection.</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ') || 'None')}</div>`;
+                        html += `</div>`;
+                    }
+                } else {
+                    // normal impostor
+                    const viewNames = getImpostorViewNames(current);
+                    if (gameMode === 'bluff') {
+                        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">IMPOSTOR</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You do NOT know the shared phrase. Instead, here is a bluff hint to help you pretend you do:</div>`;
+                        html += `<div style="margin:6px 0;font-weight:700">${escapeHtml(bluffHint)}</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ') || 'None')}</div>`;
+                        html += `</div>`;
+                    } else {
+                        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">IMPOSTOR</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You do NOT know the shared phrase. Your goal: blend in and avoid detection.</div>`;
+                        html += `<div class="muted small" style="margin-top:8px">You see these players as impostors</div><div style="margin-top:6px">${escapeHtml(viewNames.join(', ') || 'None')}</div>`;
+                        html += `</div>`;
+                    }
+                }
+            } else if (role === 'doubleAgent') {
+                const displayPhrase = getDisplayPhraseForPlayer(current);
+                html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">DOUBLE AGENT (innocent)</div>`;
+                html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
+                html += `<div class="muted small" style="margin-top:8px">You are NOT an impostor and do NOT see impostors.</div>`;
+                html += `</div>`;
+            } else if (role === 'jester') {
+                const displayPhrase = getDisplayPhraseForPlayer(current);
+                html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">JESTER</div>`;
+                html += `<div class="muted small" style="margin-top:8px">Goal: get voted out. You know the shared phrase.</div>`;
+                html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
+                html += `</div>`;
+            } else if (role === 'seer') {
+                // seer may get either a player or a role
+                const pState = players[current] || {};
+                let clue = '';
+
+                // manual override if in manual mode and host has set something
+                if (pState.seerMode === 'player' && typeof pState.seerRevealPlayerIndex === 'number') {
+                    const prIndex = pState.seerRevealPlayerIndex; const pname = (prIndex != null && players[prIndex]) ? (players[prIndex].name || ('Player ' + (prIndex + 1))) : 'None';
+                    clue = `${pname} — (special role or impostor) (you do not know which)`;
+                } else if (pState.seerMode === 'role' && pState.seerRevealRole && pState.seerRevealRole !== '(none)') {
+                    clue = `${pState.seerRevealRole.charAt(0).toUpperCase() + pState.seerRevealRole.slice(1)} — (a special role exists; you do not know who has it)`;
+                } else {
+                    // auto: randomly decide between player/role
+                    const specialList = roles.map((r, i) => { if (r !== 'normal' && r !== 'impostor') return { i, r }; return null; }).filter(Boolean).filter(x => x.i !== current);
+                    const choosePlayerFirst = Math.random() < 0.5;
+                    if (choosePlayerFirst && specialList.length > 0) { const pickOne = pickFromArray(specialList); clue = `${players[pickOne.i].name || ('Player ' + (pickOne.i + 1))} — (special role or impostor)`; }
+                    else {
+                        // pick a special role if exists
+                        const specialRoles = [...new Set(specialList.map(x => x.r))];
+                        if (specialRoles.length > 0) { const r = pickFromArray(specialRoles); clue = `${r.charAt(0).toUpperCase() + r.slice(1)} — (a special role exists; you do not know who has it)`; }
+                        else {
+                            // no special roles: let seer know presence/absence of impostor
+                            const anyImpostor = roles.some(r => r === 'impostor');
+                            clue = anyImpostor ? 'At least one impostor is present' : 'No impostors present';
+                        }
+                    }
+                }
+
+                const displayPhrase = getDisplayPhraseForPlayer(current);
+                html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">SEER</div>`;
+                html += `<div class="muted small" style="margin-top:8px">You know the shared phrase. Additionally, you get one clue (player or role):</div>`;
+                html += `<div class="muted small" style="margin-top:8px">Seer clue</div><div style="margin:6px 0;font-weight:700">${escapeHtml(clue)}</div>`;
+                html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
+                html += `</div>`;
+            } else {
+                const displayPhrase = getDisplayPhraseForPlayer(current);
+                html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">INNOCENT</div>`;
+                html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
+                html += `</div>`;
+            }
+
+            wordBox.innerHTML = html;
+            revealBtn.disabled = true; nextBtn.disabled = false;
+        });
+
+        nextBtn.addEventListener('click', () => {
+            current++;
+            if (current >= players.length) { allViewed = true; current = players.length - 1; updatePlay(); }
+            else updatePlay();
+        });
+
+        function showAnswers() {
+            const q = questionNonImpostor || '—';
+            let html = `<div class="summary">`;
+            html += `<div class="muted small">Revealed question (non-impostor)</div><div style="margin:6px 0;font-weight:700">${escapeHtml(q)}</div>`;
+            html += `<div class="muted small" style="margin-top:8px">Players' answers</div><div style="margin-top:6px">`;
+            players.forEach((p, i) => {
+                const ans = (p.answer != null && String(p.answer).trim() !== '') ? p.answer : '—';
+                html += `<div style="padding:6px;border-radius:6px;background:rgba(0,0,0,0.06);margin-bottom:6px"><strong>${escapeHtml(p.name || ('Player ' + (i + 1)))}</strong>: ${escapeHtml(String(ans))}</div>`;
+            });
+            html += `</div>`;
+            html += `<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button id="backToSetup" class="ghost" type="button">Back to setup</button></div>`;
+            html += `</div>`;
+            summaryContainer.innerHTML = html;
+            document.getElementById('backToSetup').addEventListener('click', () => { playCard.style.display = 'none'; setupCard.style.display = 'block'; summaryContainer.innerHTML = ''; });
         }
 
-        const displayPhrase = getDisplayPhraseForPlayer(current);
-        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">SEER</div>`;
-        html += `<div class="muted small" style="margin-top:8px">You know the shared phrase. Additionally, you get one clue (player or role):</div>`;
-        html += `<div class="muted small" style="margin-top:8px">Seer clue</div><div style="margin:6px 0;font-weight:700">${escapeHtml(clue)}</div>`;
-        html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
-        html += `</div>`;
-      } else {
-        const displayPhrase = getDisplayPhraseForPlayer(current);
-        html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">INNOCENT</div>`;
-        html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
-        html += `</div>`;
-      }
-
-      wordBox.innerHTML = html;
-      revealBtn.disabled=true; nextBtn.disabled=false;
-    });
-
-    nextBtn.addEventListener('click',()=>{
-      current++;
-      if(current>=players.length){ allViewed = true; current = players.length - 1; updatePlay(); }
-      else updatePlay();
-    });
-
-    function showAnswers(){
-      const q = questionNonImpostor || '—';
-      let html = `<div class="summary">`;
-      html += `<div class="muted small">Revealed question (non-impostor)</div><div style="margin:6px 0;font-weight:700">${escapeHtml(q)}</div>`;
-      html += `<div class="muted small" style="margin-top:8px">Players' answers</div><div style="margin-top:6px">`;
-      players.forEach((p,i)=>{
-        const ans = (p.answer!=null && String(p.answer).trim()!=='') ? p.answer : '—';
-        html += `<div style="padding:6px;border-radius:6px;background:rgba(0,0,0,0.06);margin-bottom:6px"><strong>${escapeHtml(p.name||('Player '+(i+1)))}</strong>: ${escapeHtml(String(ans))}</div>`;
-      });
-      html += `</div>`;
-      html += `<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button id="backToSetup" class="ghost" type="button">Back to setup</button></div>`;
-      html += `</div>`;
-      summaryContainer.innerHTML = html;
-      document.getElementById('backToSetup').addEventListener('click',()=>{ playCard.style.display='none'; setupCard.style.display='block'; summaryContainer.innerHTML=''; });
-    }
-
-    function showSummary(){
-      let html = `<div class="summary">`;
-      html += `<div class="muted small">Final roles</div><div style="margin-top:6px">`;
-      players.forEach((p,i)=>{
-        const roleLabel = roles[i].charAt(0).toUpperCase() + roles[i].slice(1);
-        let extra = '';
-        if(roles[i]==='assassin' && assassinTargets[i]!=null) extra = ` — target: ${escapeHtml(players[assassinTargets[i]].name || ('Player '+(assassinTargets[i]+1)))}`;
-        if(roles[i]==='impostor'){
-          const impostorNames = roles.map((r,j)=> (r==='impostor' || r==='doubleAgent') ? (players[j].name||('Player '+(j+1))) : null).filter(Boolean);
-          extra = ` — impostors seen: ${escapeHtml(impostorNames.join(', '))}`;
+        function showSummary() {
+            let html = `<div class="summary">`;
+            html += `<div class="muted small">Final roles</div><div style="margin-top:6px">`;
+            players.forEach((p, i) => {
+                const roleLabel = roles[i].charAt(0).toUpperCase() + roles[i].slice(1);
+                let extra = '';
+                if (roles[i] === 'assassin' && assassinTargets[i] != null) extra = ` — target: ${escapeHtml(players[assassinTargets[i]].name || ('Player ' + (assassinTargets[i] + 1)))}`;
+                if (roles[i] === 'impostor') {
+                    const impostorNames = roles.map((r, j) => (r === 'impostor' || r === 'doubleAgent') ? (players[j].name || ('Player ' + (j + 1))) : null).filter(Boolean);
+                    extra = ` — impostors seen: ${escapeHtml(impostorNames.join(', '))}`;
+                }
+                if (roles[i] === 'seer' && p && p.seerMode && p.seerMode !== '(auto)') {
+                    if (p.seerMode === 'player' && typeof p.seerRevealPlayerIndex === 'number') {
+                        const prIndex = p.seerRevealPlayerIndex; const pname = (prIndex != null && players[prIndex]) ? (players[prIndex].name || ('Player ' + (prIndex + 1))) : 'None';
+                        extra += ` — seer clue (player): ${escapeHtml(pname)}`;
+                    } else if (p.seerMode === 'role' && p.seerRevealRole && p.seerRevealRole !== '(none)') {
+                        extra += ` — seer clue (role): ${escapeHtml(p.seerRevealRole)}`;
+                    }
+                }
+                if (p && typeof p.customWord === 'string' && p.customWord.trim() !== '') {
+                    extra += ` — custom word: ${escapeHtml(p.customWord.trim())}`;
+                }
+                html += `<div style="padding:6px;border-radius:6px;background:rgba(0,0,0,0.06);margin-bottom:6px"><strong>${escapeHtml(p.name || ('Player ' + (i + 1)))}</strong>: ${escapeHtml(roleLabel)}${extra}</div>`;
+            });
+            html += `</div>`;
+            html += `<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button id="backToSetup" class="ghost" type="button">Back to setup</button></div>`;
+            html += `</div>`;
+            summaryContainer.innerHTML = html;
+            document.getElementById('backToSetup').addEventListener('click', () => { playCard.style.display = 'none'; setupCard.style.display = 'block'; summaryContainer.innerHTML = ''; });
         }
-        if(roles[i]==='seer' && p && p.seerMode && p.seerMode !== '(auto)'){
-          if(p.seerMode === 'player' && typeof p.seerRevealPlayerIndex === 'number'){
-            const prIndex = p.seerRevealPlayerIndex; const pname = (prIndex!=null && players[prIndex]) ? (players[prIndex].name || ('Player '+(prIndex+1))) : 'None';
-            extra += ` — seer clue (player): ${escapeHtml(pname)}`;
-          } else if(p.seerMode === 'role' && p.seerRevealRole && p.seerRevealRole !== '(none)'){
-            extra += ` — seer clue (role): ${escapeHtml(p.seerRevealRole)}`;
-          }
-        }
-        if(p && typeof p.customWord === 'string' && p.customWord.trim() !== ''){
-          extra += ` — custom word: ${escapeHtml(p.customWord.trim())}`;
-        }
-        html += `<div style="padding:6px;border-radius:6px;background:rgba(0,0,0,0.06);margin-bottom:6px"><strong>${escapeHtml(p.name||('Player '+(i+1)))}</strong>: ${escapeHtml(roleLabel)}${extra}</div>`;
-      });
-      html += `</div>`;
-      html += `<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button id="backToSetup" class="ghost" type="button">Back to setup</button></div>`;
-      html += `</div>`;
-      summaryContainer.innerHTML = html;
-      document.getElementById('backToSetup').addEventListener('click',()=>{ playCard.style.display='none'; setupCard.style.display='block'; summaryContainer.innerHTML=''; });
-    }
 
-    endBtn.addEventListener('click',()=>{ showSummary(); });
-  </script>
+        endBtn.addEventListener('click', () => { showSummary(); });
+    </script>
 
 </body>
+
 </html>
