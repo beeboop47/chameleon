@@ -265,7 +265,6 @@
                             style="display:inline-block">Enable generation</label>
                     </div>
 
-                    <!-- New: model selection and auto-generate on start -->
                     <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
                         <input id="modelInput" type="text" placeholder="Model (e.g. gpt-3.5-turbo)"
                             style="width:220px" />
@@ -326,7 +325,6 @@
 
         <footer style="margin-top:12px" class="muted">Manual mode supports host-only seer/assassin overrides and
             per-player words. Players are not shown that a word is player-specific.</footer>
-
     </div>
 
     <script>
@@ -340,7 +338,6 @@
 
         let questionNonImpostor = '';
         let questionImpostor = '';
-
 
         const playersEl = document.getElementById('players');
         const addBtn = document.getElementById('add');
@@ -374,29 +371,14 @@
         // --- helpers ---
         function pick(n, k) { const a = [...Array(n).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, Math.min(k, a.length)); }
         function pickFromArray(arr) { if (!arr || arr.length === 0) return null; return arr[Math.floor(Math.random() * arr.length)]; }
-
         function escapeHtml(str) { return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-
-        // whether a role should be treated as an impostor for viewing phrase / impostor lists
         function roleIsTreatedAsImpostor(r) { return r === 'impostor' || r === 'assassin'; }
-
         function getImpostorViewNames(forIndex) {
-            // if lights out enabled, impostors see no fellow impostors
             if (lightsOutEl.checked) return [];
-
             const role = roles[forIndex];
-
-            // Assassins see no other impostors
             if (role === 'assassin') return [];
-
-            // Impostors see other impostors and double agents, but NOT assassins
-            return roles.map((r, i) => {
-                if ((r === 'impostor' || r === 'doubleAgent') && i !== forIndex)
-                    return players[i].name || ('Player ' + (i + 1));
-                return null;
-            }).filter(Boolean);
+            return roles.map((r, i) => { if ((r === 'impostor' || r === 'doubleAgent') && i !== forIndex) return players[i].name || ('Player ' + (i + 1)); return null; }).filter(Boolean);
         }
-
 
         // --- rendering players list and manual controls ---
         function render() {
@@ -416,7 +398,6 @@
                 row.appendChild(select);
 
                 if (mode === 'manual') {
-                    // If player is an ASSASSIN, allow choosing a specific target
                     if ((p.selectedRole || 'normal') === 'assassin') {
                         const tsel = document.createElement('select'); tsel.className = 'inline-small';
                         const noneOpt = document.createElement('option'); noneOpt.value = '-1'; noneOpt.textContent = 'Target: —None—'; tsel.appendChild(noneOpt);
@@ -426,15 +407,12 @@
                         row.appendChild(tsel);
                     }
 
-                    // If player is a SEER, allow overriding: choose mode (auto/player/role), then show appropriate inputs
                     if ((p.selectedRole || 'normal') === 'seer') {
                         const modeSel = document.createElement('select'); modeSel.className = 'inline-smaller';
                         ['(auto)', 'player', 'role'].forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o === '(auto)' ? 'Seer: Auto' : (o === 'player' ? 'Seer: Player' : 'Seer: Role'); modeSel.appendChild(el); });
-                        modeSel.value = p.seerMode || '(auto)';
-                        modeSel.addEventListener('change', e => { p.seerMode = e.target.value; render(); });
+                        modeSel.value = p.seerMode || '(auto)'; modeSel.addEventListener('change', e => { p.seerMode = e.target.value; render(); });
                         row.appendChild(modeSel);
 
-                        // player selector
                         const psel = document.createElement('select'); psel.className = 'inline-small';
                         const noneP = document.createElement('option'); noneP.value = '-1'; noneP.textContent = 'Player: —None—'; psel.appendChild(noneP);
                         players.forEach((pp, ii) => { const o = document.createElement('option'); o.value = String(ii); o.textContent = (pp.name || ('Player ' + (ii + 1))); psel.appendChild(o); });
@@ -443,26 +421,18 @@
                         psel.style.display = (p.seerMode === 'player') ? 'inline-block' : 'none';
                         row.appendChild(psel);
 
-                        // role choice
                         const rsel = document.createElement('select'); rsel.className = 'inline-small';
                         const roleOpts = ['(none)', 'impostor', 'jester', 'assassin', 'doubleAgent'];
                         roleOpts.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o === '(none)' ? 'Seer: —None—' : 'Seer: ' + (o.charAt(0).toUpperCase() + o.slice(1)); rsel.appendChild(el); });
-                        rsel.value = p.seerRevealRole || '(none)';
-                        rsel.style.display = (p.seerMode === 'role') ? 'inline-block' : 'none';
+                        rsel.value = p.seerRevealRole || '(none)'; rsel.style.display = (p.seerMode === 'role') ? 'inline-block' : 'none';
                         rsel.addEventListener('change', e => { p.seerRevealRole = e.target.value; });
                         row.appendChild(rsel);
                     }
 
-                    // Per-player word input for roles that get the shared phrase
                     const selectedRole = (p.selectedRole || 'normal');
-                    // Assassin behaves like impostor for phrase visibility, so they SHOULD NOT have a per-player word by default
                     const getsPhrase = ['normal', 'jester', 'seer', 'doubleAgent'].includes(selectedRole);
                     if (getsPhrase) {
-                        const cw = document.createElement('input');
-                        cw.type = 'text'; cw.placeholder = 'Optional (host use only)';
-                        cw.value = p.customWord || '';
-                        cw.style.width = '220px';
-                        cw.addEventListener('input', e => { p.customWord = e.target.value; });
+                        const cw = document.createElement('input'); cw.type = 'text'; cw.placeholder = 'Optional (host use only)'; cw.value = p.customWord || ''; cw.style.width = '220px'; cw.addEventListener('input', e => { p.customWord = e.target.value; });
                         row.appendChild(cw);
                     }
                 }
@@ -486,211 +456,163 @@
 
         clearKey.addEventListener('click', () => { openaiKeyInput.value = ''; });
 
-        // --- simplified OpenAI (system-message + optional user hint) ---
-        async function callOpenAI(model, key, systemMsg, userMsg = null) {
+        //
+        // ----  SIMPLIFIED GENERATOR (integrated)  ----
+        //
+
+        const CATEGORIES = [
+            "food",
+            "travel",
+            "hobbies",
+            "childhood",
+            "work",
+            "relationships",
+            "movies",
+            "music",
+            "school",
+            "technology",
+            "money",
+            "dreams"
+        ];
+
+        const NO_REPEAT = 5;       // avoid repeating any of the last N outputs (customizable)
+        const MAX_RETRIES = 4;     // how many extra tries to attempt before accepting a repeat
+
+        function normalizeForComparison(str) {
+            return (str || '')
+                .trim()
+                .replace(/\s+/g, ' ')        // collapse whitespace
+                .replace(/[“”‘’]/g, '"')     // normalize fancy quotes
+                .replace(/[^\w\s"-]/g, '')   // remove punctuation except quotes/dashes (adjust as desired)
+                .toLowerCase();
+        }
+
+        // make mutable so we can update it between calls
+        let lastCategory = '';
+
+        // pick a category at random, excluding lastCategory; update lastCategory
+        function chooseCategory() {
+            const options = CATEGORIES.filter(c => c !== lastCategory);
+            // fallback: if options empty (shouldn't happen unless CATEGORIES has length 1), allow all
+            const pool = options.length ? options : CATEGORIES.slice();
+            const idx = Math.floor(Math.random() * pool.length);
+            const chosen = pool[idx];
+            lastCategory = chosen;
+            return chosen;
+        }
+
+        async function callOpenAI({ key, model, system = '', manualHint = '', max_tokens = 120 } = {}) {
             if (!key) throw new Error('No OpenAI API key provided');
-
-            const messages = [
-                { role: 'system', content: systemMsg || '' }
-            ];
-
-            if (userMsg && String(userMsg).trim()) {
-                messages.push({ role: 'user', content: String(userMsg).trim() });
-            }
-
-            const body = {
-                model: model || 'gpt-4o',
-                messages: messages,
-                max_tokens: 200,
-                temperature: 0.9,
-                top_p: 0.95,
-                frequency_penalty: 0.4,
-                presence_penalty: 0.8
-            };
-
+            // manualHint appended into the system as top-priority instruction
+            const finalSystem = (system || '') + (manualHint ? `\n\nUSER HINT (must follow): ${manualHint}` : '');
+            const finalModel = model || (modelInput && modelInput.value.trim()) || 'gpt-4o-mini';
             const res = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + key
-                },
-                body: JSON.stringify(body)
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+                body: JSON.stringify({
+                    model: finalModel,
+                    messages: [{ role: 'system', content: finalSystem }],
+                    max_tokens,
+                    temperature: 0.9,
+                    top_p: 0.95
+                })
             });
-
             if (!res.ok) {
-                const t = await res.text();
-                throw new Error('OpenAI error: ' + t);
+                const text = await res.text();
+                throw new Error('OpenAI error: ' + text);
             }
-
             const data = await res.json();
-            const text = data?.choices?.[0]?.message?.content?.trim() || '';
-            return text;
+            return (data?.choices?.[0]?.message?.content || '').trim();
         }
 
-        const DEFAULT_MODEL = 'gpt-4o';
-        const DEFAULT_MAX_TOKENS = 200;
-        const MAX_ATTEMPTS = 3;
+        // minimal, strict generator for word / bluff / question
+        async function generateForCurrentMode(manualHint = '') {
+    const key = (openaiKeyInput && openaiKeyInput.value) ? openaiKeyInput.value.trim() : (window.OPENAI_KEY || '').trim();
+    if (!key) throw new Error('No OpenAI API key provided');
 
-        async function callOpenAI({ model = DEFAULT_MODEL, key, systemMsg = '', manualHint = null, max_tokens = DEFAULT_MAX_TOKENS, temperature = 0.9, top_p = 0.95, frequency_penalty = 0.4, presence_penalty = 0.8 } = {}) {
-            if (!key) throw new Error('No OpenAI API key provided');
+    const mode = (document.getElementById('gameMode')?.value || 'word').toLowerCase();
 
-            // If a manual hint is provided, append it to the system message to make it high priority
-            let finalSystem = String(systemMsg || '').trim();
-            if (manualHint && String(manualHint).trim()) {
-                finalSystem += `\n\nUSER INSTRUCTION (follow exactly): ${String(manualHint).trim()}`;
-            }
+    let systems = {
+        word: 'OUTPUT: one short word or short phrase (single line, widely known proper noun/title or common noun). No extra text.',
+        bluff: 'OUTPUT: exactly two short lines. Line1 = word/phrase (single line, widely known proper noun/title or common noun). Line2 = a clear, short hint to help impostors bluff. No extra text.'
+    };
 
-            const body = {
-                model,
-                messages: [{ role: 'system', content: finalSystem }],
-                max_tokens,
-                temperature,
-                top_p,
-                frequency_penalty,
-                presence_penalty
-            };
+    if (mode === 'question') {
+        const chosen = chooseCategory();
+        systems.question = `OUTPUT: exactly two short lines. Line1 = normal, subjective, personal, opinion-based question. Line2 = a fully different question of which answers could overlap reasonably with a Line1 answer. Line2 must expect the SAME TYPE of answer (e.g., both foods, both activities, both places, etc.) as Line1.
+Answers to both questions must plausibly be identical in many cases. Both questions MUST fall under this category: ${chosen}.`;
+    } else if (mode === 'word') {
+        const chosen = chooseCategory();
+        systems.word = `OUTPUT: one short word or short phrase (single line, widely known proper noun/title or common noun) relating to: ${chosen}. No extra text.`;
+    } else if (mode === 'bluff') {
+        const chosen = chooseCategory();
+        systems.bluff = `OUTPUT: exactly two short lines. Line1 = word/phrase (single line, widely known proper noun/title or common noun) relating to: ${chosen}. Line2 = a vague, 1-word hint to help impostors bluff (hint should not name the category). No extra text.`;
+    }
 
-            const res = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + key
-                },
-                body: JSON.stringify(body)
-            });
+    const system = systems[mode] || systems.word;
 
-            if (!res.ok) {
-                const t = await res.text();
-                throw new Error('OpenAI error: ' + t);
-            }
+    // --- NEW: build a "previous outputs" block and append to manual hint ---
+    // recentGenerations is expected to contain prior saved outputs (normalized strings).
+    const lastOutputs = (Array.isArray(recentGenerations) ? recentGenerations.slice(-NO_REPEAT) : []);
+    let previousBlock = '';
+    if (lastOutputs.length) {
+        // list them so the model can see and avoid them
+        previousBlock = '\n\nPREVIOUS OUTPUTS (do NOT repeat any of these exactly or very similarly):\n'
+            + lastOutputs.map((s, i) => `${i + 1}. "${s}"`).join('\n')
+            + '\n\nIMPORTANT: Your next response must NOT repeat any of the above entries. Produce fresh content that follows the system instructions.';
+    }
 
-            const data = await res.json();
-            return data?.choices?.[0]?.message?.content?.trim() || '';
-        }
+    // combine any UI-provided manualHint with the previous outputs block
+    const baseManual = (manualHint || (typeof genPrompt !== 'undefined' && genPrompt ? genPrompt.value.trim() : '') || '').trim();
+    const finalManualHint = (baseManual ? baseManual + '\n\n' : '') + previousBlock;
 
-        /* ---------- Generator for different game modes ---------- */
-        /* Expects globals (same as original):
-           - recentGenerations: array of lowercased strings used as anti-repeat history
-           - MAX_HISTORY: maximum history length (or set locally if absent)
-           - useOpenAI (checkbox element) and DOM elements used for outputs
-        */
-        async function generateForCurrentMode(manualHint) {
-            // Optional guard if the host uses a checkbox to enable OpenAI usage
-            if (typeof useOpenAI !== 'undefined' && useOpenAI && useOpenAI.checked === false) {
-                throw new Error('OpenAI generation not enabled');
-            }
+    // Single call to the API — we no longer do local repeat-detection; the model is instructed instead.
+    const raw = await callOpenAI({
+        key,
+        model: modelInput.value.trim() || undefined,
+        system,
+        manualHint: finalManualHint,
+        max_tokens: 120
+    }).catch(e => { throw e; });
 
-            const key = (typeof openaiKeyInput !== 'undefined' && openaiKeyInput.value) ? openaiKeyInput.value.trim() : (window.OPENAI_KEY || '').trim();
-            if (!key) throw new Error('No OpenAI API key provided');
+    if (!raw) throw new Error('Empty response from generator.');
 
-            const model = (typeof modelInput !== 'undefined' && modelInput.value) ? modelInput.value.trim() : DEFAULT_MODEL;
-            const mode = (document.getElementById('gameMode')?.value || 'default').toLowerCase();
+    const finalLines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
 
-            // Build anti-repeat text if there is history
-            const history = Array.isArray(window.recentGenerations) ? window.recentGenerations : (window.recentGenerations = []);
-            const maxHistory = typeof window.MAX_HISTORY === 'number' ? window.MAX_HISTORY : 50;
+    // Save only line1 (normalized) to recentGenerations as before
+    const firstLine = finalLines[0] || raw;
+    const savedFirst = normalizeForComparison(firstLine);
+    if (savedFirst) {
+        recentGenerations.push(savedFirst);
+        if (recentGenerations.length > MAX_HISTORY) recentGenerations.shift();
+    }
 
-            const avoidText = history.length
-                ? `DO NOT use any of the following previously used prompts:\n${history.join(', ')}. Generate a different category from the last prompt in the list (e.g if it's a landmark, generate a video game, if it's a food question, generate a friendship question etc).`
-                : '';
+    // DOM output and return values (same as before)
+    if (mode === 'word') {
+        const phrase = finalLines[0] || raw;
+        if (document.getElementById('phrase')) document.getElementById('phrase').value = phrase;
+        return { phrase };
+    }
 
-            // Mode templates: name -> { lines: n, system body (without avoidText) }
-            const templates = {
-                word: {
-                    lines: 1,
-                    system: `You are a concise content generator for WORD mode.
-Return EXACTLY ONE LINE and NOTHING ELSE:
-A single proper noun/title OR a simple common noun. Must be commonly known.
-One line only. No commentary. Do not wrap anything in inverted commas, capitalise correctly.`
-                },
-                bluff: {
-                    lines: 2,
-                    system: `You are a concise generator for BLUFF mode.
-Return EXACTLY TWO LINES and NOTHING ELSE.
-Line 1: a single proper noun/title OR a simple common noun for non-impostors. Must be commonly known.
-Line 2: a short, vague category hint (1–6 words) to help impostors bluff.
-Two lines only. No commentary. Do not wrap anything in inverted commas, capitalise correctly.`
-                },
-                question: {
-                    lines: 2,
-                    system: `You are a concise generator for QUESTION mode.
-Return EXACTLY TWO LINES and NOTHING ELSE.
-Line 1: a non-impostor question (6–14 words, simple, opinion-based, not yes/no).
-Line 2: "Your answer must be: " + a pre-generated, short answer to the non-impostor question + " (not word-for-word; blend in!)".
-Two lines only. No commentary. Do not wrap anything in inverted commas, punctuate correctly.`
-                },
-                default: {
-                    lines: 1,
-                    system: `You are a concise content generator.
-Return a short, relevant single-line result.
-One line only. No commentary. Do not wrap anything in inverted commas, capitalise correctly.`
-                }
-            };
+    if (mode === 'bluff') {
+        const phrase = finalLines[0] || '';
+        const hint = finalLines[1] || '';
+        if (document.getElementById('phrase')) document.getElementById('phrase').value = phrase;
+        if (document.getElementById('bluffHint')) document.getElementById('bluffHint').value = hint;
+        return { phrase, bluffHint: hint };
+    }
 
-            const tpl = templates[mode] || templates.default;
-            const systemMsg = `${tpl.system}\n${avoidText}`;
-
-            // Try up to MAX_ATTEMPTS to avoid duplicates from the server
-            let attempts = 0;
-            let raw = '';
-            while (attempts < MAX_ATTEMPTS) {
-                raw = await callOpenAI({ model, key, systemMsg, manualHint });
-                const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-                const candidate = (lines[0] || raw).toLowerCase();
-
-                if (!history.includes(candidate)) {
-                    // accept candidate and push to history
-                    history.push(candidate);
-                    if (history.length > maxHistory) history.shift();
-                    // update global history just in case
-                    window.recentGenerations = history;
-                    break;
-                }
-                attempts++;
-            }
-
-            if (!raw) throw new Error('Could not generate unique content.');
-
-            // Normalize output lines (non-empty)
-            const lines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
-
-            // DOM updates & return values: keep the same element IDs as original code
-            if (mode === 'word' || tpl.lines === 1) {
-                const phrase = lines[0] || raw;
-                const el = document.getElementById('phrase');
-                if (el) el.value = phrase;
-                return { phrase };
-            }
-
-            if (mode === 'bluff') {
-                const phrase = lines[0] || '';
-                const hint = lines[1] || '';
-                const phraseEl = document.getElementById('phrase');
-                const hintEl = document.getElementById('bluffHint');
-                if (phraseEl) phraseEl.value = phrase;
-                if (hintEl) hintEl.value = hint;
-                return { phrase, bluffHint: hint };
-            }
-
-            if (mode === 'question') {
-                const nonText = lines[0] || '';
-                const impText = lines[1] || '';
-                const nonEl = document.getElementById('questionNonImpostor');
-                const impEl = document.getElementById('questionImpostor');
-                if (nonEl) nonEl.value = nonText;
-                if (impEl) impEl.value = impText;
-                return { questionNon: nonText, questionImp: impText };
-            }
-
-            // fallback single-line behavior
-            const phrase = lines[0] || raw;
-            const el = document.getElementById('phrase');
-            if (el) el.value = phrase;
-            return { phrase };
-        }
+    // question mode
+    const non = finalLines[0] || '';
+    const imp = finalLines[1] || '';
+    if (document.getElementById('questionNonImpostor')) document.getElementById('questionNonImpostor').value = non;
+    if (document.getElementById('questionImpostor')) document.getElementById('questionImpostor').value = imp;
+    return { questionNon: non, questionImp: imp };
+}
 
 
 
+        // wire generate button
         generateBtn.addEventListener('click', async () => {
             if (!useOpenAI.checked) { alert('Enable generation first (checkbox)'); return; }
             const key = openaiKeyInput.value.trim();
@@ -711,16 +633,13 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
         startBtn.addEventListener('click', async () => {
             if (players.length < 2) { alert('Need at least 2 players'); return; }
 
-            // If user wants generation on start and generation is enabled, attempt it first (but don't block start permanently)
             if (generateOnStartEl.checked && useOpenAI.checked) {
                 if (!openaiKeyInput.value.trim()) {
-                    // no key: warn and continue
                     if (!confirm('Generate on start is enabled but no OpenAI API key is present. Continue without generation?')) return;
                 } else {
                     startBtn.disabled = true; startBtn.textContent = 'Generating...';
                     try {
                         await generateForCurrentMode(genPrompt.value.trim());
-                        // success — we continue to start
                     } catch (e) {
                         alert('Generation on start failed: ' + e.message + '\nStarting game without generated content.');
                     } finally {
@@ -741,49 +660,35 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
             questionNonImpostor = document.getElementById('questionNonImpostor').value.trim();
             questionImpostor = document.getElementById('questionImpostor').value.trim();
 
-            // initialize roles and answers
             roles = Array(players.length).fill('normal');
             assassinTargets = {};
             allViewed = false;
             players.forEach(p => { p.answer = null; });
 
             if (mode === 'random') {
-                // pick impostors
                 const impostorIndices = pick(players.length, impostorCount);
                 impostorIndices.forEach(i => roles[i] = 'impostor');
 
-                // If Assassin is enabled: replace one of the impostors with the Assassin role (so Assassin takes an impostor slot)
                 if (enabled.assassin && impostorIndices.length > 0) {
                     const replaceIdx = pickFromArray(impostorIndices);
                     if (replaceIdx != null) {
                         roles[replaceIdx] = 'assassin';
-                        // remove that index from impostorIndices array (it's no longer an impostor)
                         const pos = impostorIndices.indexOf(replaceIdx);
                         if (pos > -1) impostorIndices.splice(pos, 1);
                     }
                 }
 
-                // Build pool of non-impostor indices for assigning other special roles
                 let pool = [...Array(players.length).keys()].filter(i => roles[i] !== 'impostor' && roles[i] !== 'assassin');
-
                 function assignRole(name) { if (!enabled[name]) return null; if (pool.length === 0) return null; const idx = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; roles[idx] = name; return idx; }
+                assignRole('jester'); assignRole('seer'); assignRole('doubleAgent');
 
-                // assign the remaining special roles from the pool (jester, seer, doubleAgent)
-                assignRole('jester');
-                assignRole('seer');
-                assignRole('doubleAgent');
-
-                // For any assassin(s) present, pick targets
                 const assassinIdxs = roles.map((r, i) => r === 'assassin' ? i : -1).filter(i => i !== -1);
-                assassinIdxs.forEach(ai => {
-                    const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai);
-                    assassinTargets[ai] = pickFromArray(possibleTargets);
-                });
+                assassinIdxs.forEach(ai => { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai); assassinTargets[ai] = pickFromArray(possibleTargets); });
 
             } else {
                 players.forEach((p, i) => { roles[i] = p.selectedRole || 'normal'; });
                 const assassinIndices = roles.map((r, i) => r === 'assassin' ? i : -1).filter(i => i !== -1);
-                assassinIndices.forEach(ai => { const p = players[ai]; if (typeof p.selectedTargetIndex === 'number') { assassinTargets[ai] = p.selectedTargetIndex; } else { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai); assassinTargets[ai] = pickFromArray(possibleTargets); } });
+                assassinIndices.forEach(ai => { const p = players[ai]; if (typeof p.selectedTargetIndex === 'number') assassinTargets[ai] = p.selectedTargetIndex; else { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai); assassinTargets[ai] = pickFromArray(possibleTargets); } });
             }
 
             current = 0; summaryContainer.innerHTML = ''; setupCard.style.display = 'none'; playCard.style.display = 'block'; updatePlay();
@@ -812,18 +717,14 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
             const bluffHint = document.getElementById('bluffHint').value.trim() || '—';
             const p = players[current];
 
-            // QUESTION MODE
             if (gameMode === 'question') {
-                // compose UI: show role only if special (assassin/seer/jester)
                 let roleLabel = '';
                 if (role === 'assassin' || role === 'seer' || role === 'jester') {
                     roleLabel = `<div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">${escapeHtml(role.charAt(0).toUpperCase() + role.slice(1))}</div>`;
                 } else {
-                    // do not reveal innocent vs impostor
                     roleLabel = `<div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">—</div>`;
                 }
 
-                // which question to show: impostor question for impostors and assassins, otherwise non-impostor question
                 const qText = (roleIsTreatedAsImpostor(role)) ? (questionImpostor || '—') : (questionNonImpostor || '—');
 
                 if (p.answer != null) {
@@ -837,13 +738,10 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
             </div>
           `;
                     revealBtn.disabled = true; nextBtn.disabled = false;
-                    if (players.every(x => x.answer != null)) {
-                        showAnswers();
-                    }
+                    if (players.every(x => x.answer != null)) { showAnswers(); }
                     return;
                 }
 
-                // show input for answer
                 wordBox.innerHTML = `
           <div style="text-align:left;width:100%">
             ${roleLabel}
@@ -863,20 +761,14 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
                 document.getElementById('submitAnswer').addEventListener('click', () => {
                     const val = document.getElementById('answerInput').value.trim();
                     players[current].answer = val;
-                    if (players.every(x => x.answer != null)) {
-                        showAnswers(); allViewed = true; updatePlay(); return;
-                    }
-                    current++; if (current >= players.length) { allViewed = true; current = players.length - 1; }
-                    updatePlay();
+                    if (players.every(x => x.answer != null)) { showAnswers(); allViewed = true; updatePlay(); return; }
+                    current++; if (current >= players.length) { allViewed = true; current = players.length - 1; } updatePlay();
                 });
 
                 document.getElementById('skipAnswer').addEventListener('click', () => {
                     players[current].answer = '';
-                    if (players.every(x => x.answer != null)) {
-                        showAnswers(); allViewed = true; updatePlay(); return;
-                    }
-                    current++; if (current >= players.length) { allViewed = true; current = players.length - 1; }
-                    updatePlay();
+                    if (players.every(x => x.answer != null)) { showAnswers(); allViewed = true; updatePlay(); return; }
+                    current++; if (current >= players.length) { allViewed = true; current = players.length - 1; } updatePlay();
                 });
 
                 return;
@@ -887,7 +779,6 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
 
             function getDisplayPhraseForPlayer(pIndex) {
                 const r = roles[pIndex];
-                // assassins are treated like impostors and should NOT see the shared phrase
                 if (roleIsTreatedAsImpostor(r)) return null;
                 const pp = players[pIndex];
                 if (pp && typeof pp.customWord === 'string' && pp.customWord.trim() !== '') return pp.customWord.trim();
@@ -896,7 +787,6 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
 
             if (roleIsTreatedAsImpostor(role)) {
                 const viewNames = getImpostorViewNames(current);
-                // ASSASSIN: special case — they are told their target but do not get the phrase
                 if (role === 'assassin') {
                     const t = (assassinTargets[current] != null) ? players[assassinTargets[current]].name || ('Player ' + (assassinTargets[current] + 1)) : 'None';
                     if (gameMode === 'bluff') {
@@ -912,7 +802,6 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
                         html += `</div>`;
                     }
                 } else {
-                    // normal impostor
                     const viewNames = getImpostorViewNames(current);
                     if (gameMode === 'bluff') {
                         html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">IMPOSTOR</div>`;
@@ -940,33 +829,23 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
                 html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
                 html += `</div>`;
             } else if (role === 'seer') {
-                // seer may get either a player or a role
                 const pState = players[current] || {};
                 let clue = '';
-
-                // manual override if in manual mode and host has set something
                 if (pState.seerMode === 'player' && typeof pState.seerRevealPlayerIndex === 'number') {
                     const prIndex = pState.seerRevealPlayerIndex; const pname = (prIndex != null && players[prIndex]) ? (players[prIndex].name || ('Player ' + (prIndex + 1))) : 'None';
                     clue = `${pname} — (special role or impostor) (you do not know which)`;
                 } else if (pState.seerMode === 'role' && pState.seerRevealRole && pState.seerRevealRole !== '(none)') {
                     clue = `${pState.seerRevealRole.charAt(0).toUpperCase() + pState.seerRevealRole.slice(1)} — (a special role exists; you do not know who has it)`;
                 } else {
-                    // auto: randomly decide between player/role
                     const specialList = roles.map((r, i) => { if (r !== 'normal' && r !== 'impostor') return { i, r }; return null; }).filter(Boolean).filter(x => x.i !== current);
                     const choosePlayerFirst = Math.random() < 0.5;
                     if (choosePlayerFirst && specialList.length > 0) { const pickOne = pickFromArray(specialList); clue = `${players[pickOne.i].name || ('Player ' + (pickOne.i + 1))} — (special role or impostor)`; }
                     else {
-                        // pick a special role if exists
                         const specialRoles = [...new Set(specialList.map(x => x.r))];
                         if (specialRoles.length > 0) { const r = pickFromArray(specialRoles); clue = `${r.charAt(0).toUpperCase() + r.slice(1)} — (a special role exists; you do not know who has it)`; }
-                        else {
-                            // no special roles: let seer know presence/absence of impostor
-                            const anyImpostor = roles.some(r => r === 'impostor');
-                            clue = anyImpostor ? 'At least one impostor is present' : 'No impostors present';
-                        }
+                        else { const anyImpostor = roles.some(r => r === 'impostor'); clue = anyImpostor ? 'At least one impostor is present' : 'No impostors present'; }
                     }
                 }
-
                 const displayPhrase = getDisplayPhraseForPlayer(current);
                 html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">SEER</div>`;
                 html += `<div class="muted small" style="margin-top:8px">You know the shared phrase. Additionally, you get one clue (player or role):</div>`;
@@ -984,21 +863,14 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
             revealBtn.disabled = true; nextBtn.disabled = false;
         });
 
-        nextBtn.addEventListener('click', () => {
-            current++;
-            if (current >= players.length) { allViewed = true; current = players.length - 1; updatePlay(); }
-            else updatePlay();
-        });
+        nextBtn.addEventListener('click', () => { current++; if (current >= players.length) { allViewed = true; current = players.length - 1; updatePlay(); } else updatePlay(); });
 
         function showAnswers() {
             const q = questionNonImpostor || '—';
             let html = `<div class="summary">`;
             html += `<div class="muted small">Revealed question (non-impostor)</div><div style="margin:6px 0;font-weight:700">${escapeHtml(q)}</div>`;
             html += `<div class="muted small" style="margin-top:8px">Players' answers</div><div style="margin-top:6px">`;
-            players.forEach((p, i) => {
-                const ans = (p.answer != null && String(p.answer).trim() !== '') ? p.answer : '—';
-                html += `<div style="padding:6px;border-radius:6px;background:rgba(0,0,0,0.06);margin-bottom:6px"><strong>${escapeHtml(p.name || ('Player ' + (i + 1)))}</strong>: ${escapeHtml(String(ans))}</div>`;
-            });
+            players.forEach((p, i) => { const ans = (p.answer != null && String(p.answer).trim() !== '') ? p.answer : '—'; html += `<div style="padding:6px;border-radius:6px;background:rgba(0,0,0,0.06);margin-bottom:6px"><strong>${escapeHtml(p.name || ('Player ' + (i + 1)))}</strong>: ${escapeHtml(String(ans))}</div>`; });
             html += `</div>`;
             html += `<div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button id="backToSetup" class="ghost" type="button">Back to setup</button></div>`;
             html += `</div>`;
@@ -1039,7 +911,6 @@ One line only. No commentary. Do not wrap anything in inverted commas, capitalis
 
         endBtn.addEventListener('click', () => { showSummary(); });
     </script>
-
 </body>
 
 </html>
