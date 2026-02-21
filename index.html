@@ -202,6 +202,8 @@
                             Seer</label>
                         <label class="toggle"><input type="checkbox" id="enableDoubleAgent" style="margin-right:8px">
                             Double Agent</label>
+                        <label class="toggle"><input type="checkbox" id="enableFollower" style="margin-right:8px">
+                            Follower</label>
                     </div>
                     <div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a
                         target to get voted out. Seer: learns about either a player (who is a special role or an
@@ -334,6 +336,7 @@
         let roles = [];
         let current = 0;
         let assassinTargets = {};
+        let followerTargets = {};
         let allViewed = false;
 
         let questionNonImpostor = '';
@@ -368,6 +371,14 @@
         const modelInput = document.getElementById('modelInput');
         const generateOnStartEl = document.getElementById('generateOnStart');
 
+        // --- seer cycle state ---
+        // seerNextRevealPlayer toggles behavior across rounds where a seer is present.
+        // true = next round with a seer will reveal a "player" (who is either an impostor or a special role),
+        // false = next round with a seer will reveal a "role" (prioritise special roles; otherwise indicate impostor presence).
+        let seerNextRevealPlayer = true;
+        // currentSeerRoundMode will be set at game start to 'player' or 'role' when there is at least one seer this round.
+        let currentSeerRoundMode = null;
+
         // --- helpers ---
         function pick(n, k) { const a = [...Array(n).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[a[i], a[j]] = [a[j], a[i]]; } return a.slice(0, Math.min(k, a.length)); }
         function pickFromArray(arr) { if (!arr || arr.length === 0) return null; return arr[Math.floor(Math.random() * arr.length)]; }
@@ -390,7 +401,7 @@
 
                 const mode = document.getElementById('mode').value;
                 const select = document.createElement('select'); select.className = 'role-select';
-                const opts = ['normal', 'impostor', 'jester', 'assassin', 'seer', 'doubleAgent'];
+                const opts = ['normal', 'impostor', 'jester', 'assassin', 'seer', 'doubleAgent', 'follower'];
                 opts.forEach(o => { const el = document.createElement('option'); el.value = o; el.textContent = o.charAt(0).toUpperCase() + o.slice(1); select.appendChild(el); });
                 select.value = p.selectedRole || 'normal';
                 select.style.display = mode === 'manual' ? 'inline-block' : 'none';
@@ -405,6 +416,15 @@
                         tsel.value = (typeof p.selectedTargetIndex === 'number') ? String(p.selectedTargetIndex) : '-1';
                         tsel.addEventListener('change', e => { p.selectedTargetIndex = parseInt(e.target.value, 10); if (p.selectedTargetIndex === -1) p.selectedTargetIndex = null; });
                         row.appendChild(tsel);
+                    }
+
+                    if ((p.selectedRole || 'normal') === 'follower') {
+                        const fsel = document.createElement('select'); fsel.className = 'inline-small';
+                        const noneOptF = document.createElement('option'); noneOptF.value = '-1'; noneOptF.textContent = 'Target: —None—'; fsel.appendChild(noneOptF);
+                        players.forEach((pp, ii) => { const o = document.createElement('option'); o.value = String(ii); o.textContent = (pp.name || ('Player ' + (ii + 1))); fsel.appendChild(o); });
+                        fsel.value = (typeof p.selectedTargetIndex === 'number') ? String(p.selectedTargetIndex) : '-1';
+                        fsel.addEventListener('change', e => { p.selectedTargetIndex = parseInt(e.target.value, 10); if (p.selectedTargetIndex === -1) p.selectedTargetIndex = null; });
+                        row.appendChild(fsel);
                     }
 
                     if ((p.selectedRole || 'normal') === 'seer') {
@@ -430,7 +450,7 @@
                     }
 
                     const selectedRole = (p.selectedRole || 'normal');
-                    const getsPhrase = ['normal', 'jester', 'seer', 'doubleAgent'].includes(selectedRole);
+                    const getsPhrase = ['normal', 'jester', 'seer', 'doubleAgent', 'follower'].includes(selectedRole);
                     if (getsPhrase) {
                         const cw = document.createElement('input'); cw.type = 'text'; cw.placeholder = 'Optional (host use only)'; cw.value = p.customWord || ''; cw.style.width = '220px'; cw.addEventListener('input', e => { p.customWord = e.target.value; });
                         row.appendChild(cw);
@@ -710,7 +730,8 @@ If any rule is broken, the output is invalid.
                 jester: document.getElementById('enableJester').checked,
                 assassin: document.getElementById('enableAssassin').checked,
                 seer: document.getElementById('enableSeer').checked,
-                doubleAgent: document.getElementById('enableDoubleAgent').checked
+                doubleAgent: document.getElementById('enableDoubleAgent').checked,
+                follower: document.getElementById('enableFollower').checked   // <- new
             };
 
             questionNonImpostor = document.getElementById('questionNonImpostor').value.trim();
@@ -736,15 +757,30 @@ If any rule is broken, the output is invalid.
 
                 let pool = [...Array(players.length).keys()].filter(i => roles[i] !== 'impostor' && roles[i] !== 'assassin');
                 function assignRole(name) { if (!enabled[name]) return null; if (pool.length === 0) return null; const idx = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]; roles[idx] = name; return idx; }
-                assignRole('jester'); assignRole('seer'); assignRole('doubleAgent');
+                assignRole('jester'); assignRole('seer'); assignRole('doubleAgent'); assignRole('follower');
 
                 const assassinIdxs = roles.map((r, i) => r === 'assassin' ? i : -1).filter(i => i !== -1);
                 assassinIdxs.forEach(ai => { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai); assassinTargets[ai] = pickFromArray(possibleTargets); });
+
+                const followerIdxs = roles.map((r, i) => r === 'follower' ? i : -1).filter(i => i !== -1);
+                followerIdxs.forEach(fi => { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== fi); followerTargets[fi] = pickFromArray(possibleTargets); });
 
             } else {
                 players.forEach((p, i) => { roles[i] = p.selectedRole || 'normal'; });
                 const assassinIndices = roles.map((r, i) => r === 'assassin' ? i : -1).filter(i => i !== -1);
                 assassinIndices.forEach(ai => { const p = players[ai]; if (typeof p.selectedTargetIndex === 'number') assassinTargets[ai] = p.selectedTargetIndex; else { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== ai); assassinTargets[ai] = pickFromArray(possibleTargets); } });
+
+                const followerIndices = roles.map((r, i) => r === 'follower' ? i : -1).filter(i => i !== -1);
+                followerIndices.forEach(fi => { const p = players[fi]; if (typeof p.selectedTargetIndex === 'number') followerTargets[fi] = p.selectedTargetIndex; else { const possibleTargets = [...Array(players.length).keys()].filter(i => i !== fi); followerTargets[fi] = pickFromArray(possibleTargets); } });
+            }
+
+            // --- NEW: decide seer round mode and toggle the global cycle only when at least one seer is present ---
+            if (roles.includes('seer')) {
+                currentSeerRoundMode = seerNextRevealPlayer ? 'player' : 'role';
+                // flip for the *next* round where a seer is present
+                seerNextRevealPlayer = !seerNextRevealPlayer;
+            } else {
+                currentSeerRoundMode = null;
             }
 
             current = 0; summaryContainer.innerHTML = ''; setupCard.style.display = 'none'; playCard.style.display = 'block'; updatePlay();
@@ -785,32 +821,32 @@ If any rule is broken, the output is invalid.
 
                 if (p.answer != null) {
                     wordBox.innerHTML = `
-            <div style="text-align:left;width:100%">
-              ${roleLabel}
-              <div class="muted small" style="margin-top:8px">Question</div>
-              <div style="margin:6px 0;font-weight:700">${escapeHtml(qText)}</div>
-              <div class="muted small" style="margin-top:8px">Your answer (submitted)</div>
-              <div style="margin:6px 0;font-weight:700">${escapeHtml(String(p.answer))}</div>
-            </div>
-          `;
+        <div style="text-align:left;width:100%">
+          ${roleLabel}
+          <div class="muted small" style="margin-top:8px">Question</div>
+          <div style="margin:6px 0;font-weight:700">${escapeHtml(qText)}</div>
+          <div class="muted small" style="margin-top:8px">Your answer (submitted)</div>
+          <div style="margin:6px 0;font-weight:700">${escapeHtml(String(p.answer))}</div>
+        </div>
+      `;
                     revealBtn.disabled = true; nextBtn.disabled = false;
                     if (players.every(x => x.answer != null)) { showAnswers(); }
                     return;
                 }
 
                 wordBox.innerHTML = `
-          <div style="text-align:left;width:100%">
-            ${roleLabel}
-            <div class="muted small" style="margin-top:8px">Question</div>
-            <div style="margin:6px 0;font-weight:700">${escapeHtml(qText)}</div>
-            <div class="muted small" style="margin-top:8px">Your answer (private)</div>
-            <textarea id="answerInput" placeholder="Type your answer here..."></textarea>
-            <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-              <button id="submitAnswer" type="button">Submit Answer</button>
-              <button id="skipAnswer" class="ghost" type="button">Skip</button>
-            </div>
-          </div>
-        `;
+      <div style="text-align:left;width:100%">
+        ${roleLabel}
+        <div class="muted small" style="margin-top:8px">Question</div>
+        <div style="margin:6px 0;font-weight:700">${escapeHtml(qText)}</div>
+        <div class="muted small" style="margin-top:8px">Your answer (private)</div>
+        <textarea id="answerInput" placeholder="Type your answer here..."></textarea>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
+          <button id="submitAnswer" type="button">Submit Answer</button>
+          <button id="skipAnswer" class="ghost" type="button">Skip</button>
+        </div>
+      </div>
+    `;
 
                 revealBtn.disabled = true; nextBtn.disabled = true;
 
@@ -884,15 +920,67 @@ If any rule is broken, the output is invalid.
                 html += `<div class="muted small" style="margin-top:8px">Goal: get voted out. You know the shared phrase.</div>`;
                 html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
                 html += `</div>`;
+            } else if (role === 'follower') {
+                const displayPhrase = getDisplayPhraseForPlayer(current);
+                const t = (followerTargets[current] != null) ? players[followerTargets[current]].name || ('Player ' + (followerTargets[current] + 1)) : 'None';
+                html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">FOLLOWER</div>`;
+                html += `<div class="muted small" style="margin-top:8px">Goal: prevent your assigned target from being voted out. You know the shared phrase.</div>`;
+                html += `<div class="muted small" style="margin-top:8px">Target</div><div style="margin:6px 0;font-weight:700">${escapeHtml(t)}</div>`;
+                html += `<div class="muted small">Shared phrase</div><div style="margin:6px 0;font-weight:700">${escapeHtml(displayPhrase || '—')}</div>`;
+                html += `</div>`;
             } else if (role === 'seer') {
+                // --- NEW: seer behavior per requested cycle ---
                 const pState = players[current] || {};
+                // If the host manually set seerMode to 'player' or 'role', respect that.
+                // Otherwise use the round-wide currentSeerRoundMode (which alternates each round a seer exists).
+                const effectiveSeerMode = (pState.seerMode && pState.seerMode !== '(auto)') ? pState.seerMode : (currentSeerRoundMode || '(auto)');
+
                 let clue = '';
-                if (pState.seerMode === 'player' && typeof pState.seerRevealPlayerIndex === 'number') {
-                    const prIndex = pState.seerRevealPlayerIndex; const pname = (prIndex != null && players[prIndex]) ? (players[prIndex].name || ('Player ' + (prIndex + 1))) : 'None';
-                    clue = `${pname} — (special role or impostor) (you do not know which)`;
-                } else if (pState.seerMode === 'role' && pState.seerRevealRole && pState.seerRevealRole !== '(none)') {
-                    clue = `${pState.seerRevealRole.charAt(0).toUpperCase() + pState.seerRevealRole.slice(1)} — (a special role exists; you do not know who has it)`;
+                if (effectiveSeerMode === 'player') {
+                    // Find players (excluding the seer themself) who are either impostor or a special role
+                    const candidateIndices = roles.map((r, i) => {
+                        if (i === current) return null;
+                        if (r !== 'normal') return i;
+                        return null;
+                    }).filter(v => v !== null);
+
+                    if (candidateIndices.length > 0) {
+                        // If the user manually selected a player to reveal, prefer that.
+                        if (typeof pState.seerRevealPlayerIndex === 'number' && pState.seerRevealPlayerIndex !== -1 && pState.seerRevealPlayerIndex !== current && players[pState.seerRevealPlayerIndex]) {
+                            const prIndex = pState.seerRevealPlayerIndex;
+                            clue = `${players[prIndex].name || ('Player ' + (prIndex + 1))} — (special role or impostor)`;
+                        } else {
+                            const pickOne = pickFromArray(candidateIndices);
+                            clue = `${players[pickOne].name || ('Player ' + (pickOne + 1))} — (special role or impostor)`;
+                        }
+                    } else {
+                        // fallback: no non-normal roles exist (rare). Tell seer that none exist.
+                        clue = 'No special roles or impostors present';
+                    }
+                } else if (effectiveSeerMode === 'role') {
+                    // Prioritise special roles (excluding 'seer' itself if you'd like — we'll include other special roles)
+                    const specialRoleNames = ['jester', 'assassin', 'doubleAgent', 'follower'];
+                    const specialPresent = [];
+                    roles.forEach((r, i) => {
+                        if (i === current) return;
+                        if (specialRoleNames.includes(r)) specialPresent.push(r);
+                    });
+                    if (typeof pState.seerRevealRole === 'string' && pState.seerRevealRole && pState.seerRevealRole !== '(none)') {
+                        // Host-specified seer reveal role override (manual)
+                        clue = `${pState.seerRevealRole.charAt(0).toUpperCase() + pState.seerRevealRole.slice(1)} — (a special role exists; you do not know who has it)`;
+                    } else if (specialPresent.length > 0) {
+                        // pick a special role to reveal (capitalized)
+                        const pickedRole = pickFromArray(specialPresent);
+                        const cap = pickedRole.charAt(0).toUpperCase() + pickedRole.slice(1);
+                        clue = `${cap} — (a special role exists; you do not know who has it)`;
+                    } else {
+                        // No special roles found: indicate impostor presence
+                        const hasImpostor = roles.some(r => r === 'impostor' || r === 'assassin');
+                        if (hasImpostor) clue = 'At least one impostor is present';
+                        else clue = 'No impostors present';
+                    }
                 } else {
+                    // '(auto)' fallback — replicate previous behavior roughly (randomly pick player or role clue)
                     const specialList = roles.map((r, i) => { if (r !== 'normal' && r !== 'impostor') return { i, r }; return null; }).filter(Boolean).filter(x => x.i !== current);
                     const choosePlayerFirst = Math.random() < 0.5;
                     if (choosePlayerFirst && specialList.length > 0) { const pickOne = pickFromArray(specialList); clue = `${players[pickOne.i].name || ('Player ' + (pickOne.i + 1))} — (special role or impostor)`; }
@@ -902,6 +990,7 @@ If any rule is broken, the output is invalid.
                         else { const anyImpostor = roles.some(r => r === 'impostor'); clue = anyImpostor ? 'At least one impostor is present' : 'No impostors present'; }
                     }
                 }
+
                 const displayPhrase = getDisplayPhraseForPlayer(current);
                 html += `<div style="text-align:left;width:100%"><div class="muted small">Role</div><div style="font-weight:700;margin:8px 0">SEER</div>`;
                 html += `<div class="muted small" style="margin-top:8px">You know the shared phrase. Additionally, you get one clue (player or role):</div>`;
