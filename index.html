@@ -501,6 +501,12 @@
             return chosen;
         }
 
+        function toTitleCase(str) {
+            return str.replace(/\w\S*/g, w =>
+                w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+            );
+        }
+
         async function callOpenAI({ key, model, system = '', manualHint = '', max_tokens = 120 } = {}) {
             if (!key) throw new Error('No OpenAI API key provided');
             // manualHint appended into the system as top-priority instruction
@@ -527,88 +533,138 @@
 
         // minimal, strict generator for word / bluff / question
         async function generateForCurrentMode(manualHint = '') {
-    const key = (openaiKeyInput && openaiKeyInput.value) ? openaiKeyInput.value.trim() : (window.OPENAI_KEY || '').trim();
-    if (!key) throw new Error('No OpenAI API key provided');
+            const key = (openaiKeyInput && openaiKeyInput.value) ? openaiKeyInput.value.trim() : (window.OPENAI_KEY || '').trim();
+            if (!key) throw new Error('No OpenAI API key provided');
 
-    const mode = (document.getElementById('gameMode')?.value || 'word').toLowerCase();
+            const mode = (document.getElementById('gameMode')?.value || 'word').toLowerCase();
 
-    let systems = {
-        word: 'OUTPUT: one short word or short phrase (single line, widely known proper noun/title or common noun). No extra text.',
-        bluff: 'OUTPUT: exactly two short lines. Line1 = word/phrase (single line, widely known proper noun/title or common noun). Line2 = a clear, short hint to help impostors bluff. No extra text.'
-    };
+            let systems = {
+                word: 'OUTPUT: one short word or short phrase (single line, widely known proper noun/title or common noun). No extra text.',
+                bluff: 'OUTPUT: exactly two short lines. Line1 = word/phrase (single line, widely known proper noun/title or common noun). Line2 = a clear, short hint to help impostors bluff. No extra text.'
+            };
 
-    if (mode === 'question') {
-        const chosen = chooseCategory();
-        systems.question = `OUTPUT: exactly two short lines. Line1 = normal, subjective, personal, opinion-based question. Line2 = a fully different question of which answers could overlap reasonably with a Line1 answer. Line2 must expect the SAME TYPE of answer (e.g., both foods, both activities, both places, etc.) as Line1.
-Answers to both questions must plausibly be identical in many cases. Both questions MUST fall under this category: ${chosen}.`;
-    } else if (mode === 'word') {
-        const chosen = chooseCategory();
-        systems.word = `OUTPUT: one short word or short phrase (single line, widely known proper noun/title or common noun) relating to: ${chosen}. No extra text.`;
-    } else if (mode === 'bluff') {
-        const chosen = chooseCategory();
-        systems.bluff = `OUTPUT: exactly two short lines. Line1 = word/phrase (single line, widely known proper noun/title or common noun) relating to: ${chosen}. Line2 = a vague, 1-word hint to help impostors bluff (hint should not name the category). No extra text.`;
-    }
+            if (mode === 'question') {
+                const chosen = chooseCategory();
+                systems.question = `
+You are generating paired subjective questions for a party game.
 
-    const system = systems[mode] || systems.word;
+STRICT OUTPUT FORMAT:
+Line 1: A subjective, personal, opinion-based question.
+Line 2: A DIFFERENT question.
 
-    // --- NEW: build a "previous outputs" block and append to manual hint ---
-    // recentGenerations is expected to contain prior saved outputs (normalized strings).
-    const lastOutputs = (Array.isArray(recentGenerations) ? recentGenerations.slice(-NO_REPEAT) : []);
-    let previousBlock = '';
-    if (lastOutputs.length) {
-        // list them so the model can see and avoid them
-        previousBlock = '\n\nPREVIOUS OUTPUTS (do NOT repeat any of these exactly or very similarly):\n'
-            + lastOutputs.map((s, i) => `${i + 1}. "${s}"`).join('\n')
-            + '\n\nIMPORTANT: Your next response must NOT repeat any of the above entries. Produce fresh content that follows the system instructions.';
-    }
+RULES:
+- EXACTLY 2 lines.
+- No blank lines.
+- No quotes.
+- No emojis.
+- No explanations.
+- Both questions must expect the SAME TYPE of answer.
+- Both must clearly fall under this category: ${chosen}.
+- In many realistic cases, the SAME answer could reasonably fit both questions.
 
-    // combine any UI-provided manualHint with the previous outputs block
-    const baseManual = (manualHint || (typeof genPrompt !== 'undefined' && genPrompt ? genPrompt.value.trim() : '') || '').trim();
-    const finalManualHint = (baseManual ? baseManual + '\n\n' : '') + previousBlock;
+If any rule is broken, the output is invalid.
+`;
+            } else if (mode === 'word') {
+                const chosen = chooseCategory();
+                systems.word = `
+You are generating a secret word for a social deduction game.
 
-    // Single call to the API — we no longer do local repeat-detection; the model is instructed instead.
-    const raw = await callOpenAI({
-        key,
-        model: modelInput.value.trim() || undefined,
-        system,
-        manualHint: finalManualHint,
-        max_tokens: 120
-    }).catch(e => { throw e; });
+STRICT OUTPUT RULES:
+- Output EXACTLY one line.
+- That line must contain ONLY the answer.
+- No punctuation at the end.
+- No quotes.
+- No emojis.
+- No explanation.
+- No extra whitespace.
+- 1–3 words maximum.
+- Must be a widely known proper noun, title, or common noun.
+- Must relate clearly to this category: ${chosen}.
 
-    if (!raw) throw new Error('Empty response from generator.');
+If you break any rule, the output is invalid.
+`;
+            } else if (mode === 'bluff') {
+                const chosen = chooseCategory();
+                systems.bluff = `
+You are generating a secret word for a social deduction game.
 
-    const finalLines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+STRICT OUTPUT FORMAT:
+Line 1: The secret word or short phrase (1–3 words).
+Line 2: A vague ONE-WORD hint to help bluffing.
+There must be EXACTLY 2 lines.
+No blank lines.
+No punctuation at the end of either line.
+No quotes.
+No emojis.
+No explanations.
+The hint must NOT reveal the category directly.
 
-    // Save only line1 (normalized) to recentGenerations as before
-    const firstLine = finalLines[0] || raw;
-    const savedFirst = normalizeForComparison(firstLine);
-    if (savedFirst) {
-        recentGenerations.push(savedFirst);
-        if (recentGenerations.length > MAX_HISTORY) recentGenerations.shift();
-    }
+The word must relate clearly to this category: ${chosen}.
 
-    // DOM output and return values (same as before)
-    if (mode === 'word') {
-        const phrase = finalLines[0] || raw;
-        if (document.getElementById('phrase')) document.getElementById('phrase').value = phrase;
-        return { phrase };
-    }
+If any rule is broken, the output is invalid.
+`;
+            }
 
-    if (mode === 'bluff') {
-        const phrase = finalLines[0] || '';
-        const hint = finalLines[1] || '';
-        if (document.getElementById('phrase')) document.getElementById('phrase').value = phrase;
-        if (document.getElementById('bluffHint')) document.getElementById('bluffHint').value = hint;
-        return { phrase, bluffHint: hint };
-    }
+            const system = systems[mode] || systems.word;
 
-    // question mode
-    const non = finalLines[0] || '';
-    const imp = finalLines[1] || '';
-    if (document.getElementById('questionNonImpostor')) document.getElementById('questionNonImpostor').value = non;
-    if (document.getElementById('questionImpostor')) document.getElementById('questionImpostor').value = imp;
-    return { questionNon: non, questionImp: imp };
-}
+            // --- NEW: build a "previous outputs" block and append to manual hint ---
+            // recentGenerations is expected to contain prior saved outputs (normalized strings).
+            const lastOutputs = (Array.isArray(recentGenerations) ? recentGenerations.slice(-NO_REPEAT) : []);
+            let previousBlock = '';
+            if (lastOutputs.length) {
+                // list them so the model can see and avoid them
+                previousBlock = '\n\nPREVIOUS OUTPUTS (do NOT repeat any of these exactly or very similarly):\n'
+                    + lastOutputs.map((s, i) => `${i + 1}. "${s}"`).join('\n')
+                    + '\n\nIMPORTANT: Your next response must NOT repeat any of the above entries. Produce fresh content that follows the system instructions.';
+            }
+
+            // combine any UI-provided manualHint with the previous outputs block
+            const baseManual = (manualHint || (typeof genPrompt !== 'undefined' && genPrompt ? genPrompt.value.trim() : '') || '').trim();
+            const finalManualHint = (baseManual ? baseManual + '\n\n' : '') + previousBlock;
+
+            // Single call to the API — we no longer do local repeat-detection; the model is instructed instead.
+            const raw = await callOpenAI({
+                key,
+                model: modelInput.value.trim() || undefined,
+                system,
+                manualHint: finalManualHint,
+                max_tokens: 120
+            }).catch(e => { throw e; });
+
+            if (!raw) throw new Error('Empty response from generator.');
+
+            const finalLines = raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+
+            // Save only line1 (normalized) to recentGenerations as before
+            const firstLine = finalLines[0] || raw;
+            const savedFirst = normalizeForComparison(firstLine);
+            if (savedFirst) {
+                recentGenerations.push(savedFirst);
+                if (recentGenerations.length > MAX_HISTORY) recentGenerations.shift();
+            }
+
+            // DOM output and return values (same as before)
+            if (mode === 'word') {
+                const phrase = toTitleCase(finalLines[0] || raw);
+                if (document.getElementById('phrase')) document.getElementById('phrase').value = phrase;
+                return { phrase };
+            }
+
+            if (mode === 'bluff') {
+                const phrase = toTitleCase(finalLines[0] || raw);
+                const hint = toTitleCase(finalLines[1] || '');
+                if (document.getElementById('phrase')) document.getElementById('phrase').value = phrase;
+                if (document.getElementById('bluffHint')) document.getElementById('bluffHint').value = hint;
+                return { phrase, bluffHint: hint };
+            }
+
+            // question mode
+            const non = finalLines[0] || '';
+            const imp = finalLines[1] || '';
+            if (document.getElementById('questionNonImpostor')) document.getElementById('questionNonImpostor').value = non;
+            if (document.getElementById('questionImpostor')) document.getElementById('questionImpostor').value = imp;
+            return { questionNon: non, questionImp: imp };
+        }
 
 
 
