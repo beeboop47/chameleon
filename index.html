@@ -1133,6 +1133,18 @@
           </div>
         </div>
         <div style="margin-top:10px">
+          <label>Role ID (special behaviour)</label>
+          <select id="roleSpecialId">
+            <option value="default">Default — no special identity</option>
+            <option value="policeman">Policeman — permanent intel + Henchman link</option>
+            <option value="henchman">Henchman — recognises Policeman</option>
+            <option value="godfather">Godfather — shares the Evil team kill</option>
+            <option value="jester">Jester — converts when Evil is eliminated</option>
+            <option value="serial_killer">Serial Killer — Jester conversion target</option>
+          </select>
+          <div class="muted tiny" style="margin-top:5px">Most roles should stay on <strong>Default</strong>. IDs only enable hard-coded behaviour that cannot be expressed by the normal ability/visibility settings. Renaming a role does not change its ID.</div>
+        </div>
+        <div style="margin-top:10px">
           <label>Description shown to the player who gets the role</label>
           <textarea id="roleDescription" placeholder="Write the complete player-facing role instructions."></textarea>
         </div>
@@ -1335,7 +1347,7 @@
         visibility: 'nobody', nightAction: 'teamKill'
       },
       {
-        id: 'serial_killer', title: 'Serial Killer', orientation: 'neutral',
+        id: 'serial_killer', specialId: 'serial_killer', title: 'Serial Killer', orientation: 'neutral',
         description: 'Each night, choose one living player to kill.',
         visibility: 'nobody', nightAction: 'kill'
       },
@@ -1370,7 +1382,7 @@
         visibility: 'evil', nightAction: 'traitor'
       },
       {
-        id: 'jester', title: 'Jester', orientation: 'neutral',
+        id: 'jester', specialId: 'jester', title: 'Jester', orientation: 'neutral',
         description: 'Try to get voted out by the Citizens during the day. You win immediately when the town votes you out.',
         visibility: 'nobody', nightAction: 'none', winCondition: 'votedOut'
       },
@@ -1390,7 +1402,7 @@
         visibility: 'evil', nightAction: 'hater', winCondition: 'sideWhenTargetVotedOut'
       },
       {
-        id: 'godfather', title: 'Godfather', orientation: 'evil',
+        id: 'godfather', specialId: 'godfather', title: 'Godfather', orientation: 'evil',
         description: 'Coordinate with your evil subordinates to kill. Your evil team shares one team kill per night; any living evil player can submit the team kill and only one is used.',
         visibility: 'evil', nightAction: 'teamKill'
       },
@@ -1420,12 +1432,12 @@
         visibility: 'nobody', nightAction: 'janitor'
       },
       {
-        id: 'policeman', title: 'Policeman', orientation: 'good',
+        id: 'policeman', specialId: 'policeman', title: 'Policeman', orientation: 'good',
         description: 'When you first reveal this role, you are assigned one permanent intelligence target and learn that player’s exact role and alignment. You may hint at what you know, but you must never directly claim that you are the Policeman. Your intelligence is repeated privately every night.',
         visibility: 'nobody', nightAction: 'none', randomEnabled: false, randomCount: 1
       },
       {
-        id: 'henchman', title: 'Henchman', orientation: 'evil',
+        id: 'henchman', specialId: 'henchman', title: 'Henchman', orientation: 'evil',
         description: 'If a Policeman is in the game, you and the Policeman recognise each other. You may pressure the Policeman in real life and try to make them act or speak the way you want, but normal game rules still apply.',
         visibility: 'evil', nightAction: 'none', randomEnabled: false, randomCount: 1
       },
@@ -1490,6 +1502,19 @@
     }
     function playersAlive() {return state.players.filter(p => p.alive);}
     function roleOf(player) {return player ? state.roles.find(r => r.id === player.roleId) : null;}
+
+    // A role's internal `id` remains a hidden unique key used for assignments,
+    // presets and saves. `specialId` is the user-editable behaviour identity.
+    // Legacy saves created before this split are inferred from their old IDs.
+    const SPECIAL_ROLE_IDS = new Set(['policeman', 'henchman', 'godfather', 'jester', 'serial_killer']);
+    function specialRoleId(role) {
+      if (!role) return 'default';
+      if (SPECIAL_ROLE_IDS.has(role.specialId)) return role.specialId;
+      if ((role.specialId == null || role.specialId === '') && SPECIAL_ROLE_IDS.has(role.id)) return role.id;
+      return 'default';
+    }
+    function roleHasSpecialId(role, id) { return specialRoleId(role) === id; }
+
     function effectiveRoleOf(player) {
       if (!player) return null;
       const framed = player.framedRoleId ? state.roles.find(r => r.id === player.framedRoleId) : null;
@@ -1530,7 +1555,7 @@
     }
 
     function ensurePolicemanIntel(player) {
-      if (!player || roleOf(player)?.id !== 'policeman') return null;
+      if (!player || !roleHasSpecialId(roleOf(player), 'policeman')) return null;
       if (player.policemanIntel?.targetId != null) return player.policemanIntel;
       const target = randomChoice(state.players.filter(p => p.id !== player.id));
       const targetRole = roleOf(target);
@@ -1542,15 +1567,15 @@
       const role = roleOf(player);
       if (!role) return '';
       const chunks = [];
-      if (role.id === 'policeman') {
+      if (roleHasSpecialId(role, 'policeman')) {
         const intel = ensurePolicemanIntel(player);
         const target = playerOf(intel?.targetId);
         if (intel && target) chunks.push(`<div class="intel-card"><strong>Policeman intelligence</strong><div style="margin-top:5px"><strong>${escapeHtml(target.name)}</strong> was <strong>${escapeHtml(intel.roleTitle)}</strong> (${escapeHtml(labelOrientation(intel.orientation))}) when you received your assignment.</div><div class="tiny muted" style="margin-top:6px">You may hint at this information, but you must not directly say that you are the Policeman.</div></div>`);
-        const henchmen = state.players.filter(p => p.id !== player.id && roleOf(p)?.id === 'henchman');
+        const henchmen = state.players.filter(p => p.id !== player.id && roleHasSpecialId(roleOf(p), 'henchman'));
         if (henchmen.length) chunks.push(`<div class="intel-card"><strong>Henchman contact</strong><div style="margin-top:5px">${henchmen.map(p=>escapeHtml(p.name)).join(', ')} ${henchmen.length === 1 ? 'is' : 'are'} Henchman. You recognise each other.</div></div>`);
       }
-      if (role.id === 'henchman') {
-        const police = state.players.filter(p => roleOf(p)?.id === 'policeman');
+      if (roleHasSpecialId(role, 'henchman')) {
+        const police = state.players.filter(p => roleHasSpecialId(roleOf(p), 'policeman'));
         if (police.length) chunks.push(`<div class="intel-card"><strong>Policeman contact</strong><div style="margin-top:5px">${police.map(p=>escapeHtml(p.name)).join(', ')} ${police.length === 1 ? 'is' : 'are'} Policeman. You recognise each other and may pressure them in real life, within the agreed rules of the game.</div></div>`);
       }
       return chunks.join('');
@@ -1565,7 +1590,7 @@
       target.haterTargetId = null;
       target.policemanIntel = null;
       target.used = {};
-      if (nextRole.id === 'policeman') ensurePolicemanIntel(target);
+      if (roleHasSpecialId(nextRole, 'policeman')) ensurePolicemanIntel(target);
       addLog(`${actor?.name || 'A night ability'} permanently changed ${target.name}'s role from ${oldRole?.title || 'Unknown'} to ${nextRole.title}.`);
       return true;
     }
@@ -1684,7 +1709,7 @@
       if (!viewer.alive) return true;
 
       const viewerRole = roleOf(viewer);
-      if ((viewerRole?.id === 'policeman' && role.id === 'henchman') || (viewerRole?.id === 'henchman' && role.id === 'policeman')) return true;
+      if ((roleHasSpecialId(viewerRole, 'policeman') && roleHasSpecialId(role, 'henchman')) || (roleHasSpecialId(viewerRole, 'henchman') && roleHasSpecialId(role, 'policeman'))) return true;
       if (Array.isArray(role.visibleToRoleIds) && viewerRole && role.visibleToRoleIds.includes(viewerRole.id)) return true;
       if (role.visibility === 'everyone') return true;
       if (role.visibility === 'nobody') return false;
@@ -1804,7 +1829,7 @@
         <button class="ghost" data-edit type="button">Edit</button>
         <button class="danger" data-delete type="button">Remove</button></div>
       <div class="role-desc">${escapeHtml(role.description)}</div>
-      <div class="muted tiny" style="margin-top:8px">Night ability: ${escapeHtml(NIGHT_ACTIONS[role.nightAction]?.label || role.nightAction || 'None')} · Seen by: ${escapeHtml(visibilityText(role.visibility))}${role.visibleToRoleIds?.length ? ` + selected roles (${role.visibleToRoleIds.map(id=>state.roles.find(r=>r.id===id)?.title||id).join(', ')})` : ''} · Win condition: ${escapeHtml(winConditionText(role))}</div>`;
+      <div class="muted tiny" style="margin-top:8px">Night ability: ${escapeHtml(NIGHT_ACTIONS[role.nightAction]?.label || role.nightAction || 'None')} · Seen by: ${escapeHtml(visibilityText(role.visibility))}${role.visibleToRoleIds?.length ? ` + selected roles (${role.visibleToRoleIds.map(id=>state.roles.find(r=>r.id===id)?.title||id).join(', ')})` : ''} · Win condition: ${escapeHtml(winConditionText(role))}${specialRoleId(role) !== 'default' ? ` · ID: ${escapeHtml(specialRoleId(role))}` : ''}</div>`;
         card.querySelector('[data-edit]').addEventListener('click', () => openRoleEditor(role.id));
         card.querySelector('[data-delete]').addEventListener('click', () => removeRole(role.id));
         el.appendChild(card);
@@ -1821,6 +1846,7 @@
       $('editorTitle').textContent = role ? `Edit: ${role.title}` : 'New role';
       $('roleTitle').value = role?.title || '';
       $('roleOrientation').value = role?.orientation || 'good';
+      $('roleSpecialId').value = specialRoleId(role);
       $('roleDescription').value = role?.description || '';
       $('roleNightAction').value = role?.nightAction || 'none';
       $('roleVisibility').value = role?.visibility || 'nobody';
@@ -1984,7 +2010,7 @@
         state.players.forEach((p, i) => {p.roleId = shuffledAssigned[i] || null;});
       }
       state.players.forEach(p => {p.alive = true; p.used = {}; p.escaped = false; p.eliminatedByVote = false; p.framedRoleId = null; p.haterTargetId = null; p.policemanIntel = null; p.silenced = false;});
-      state.players.filter(p => roleOf(p)?.id === 'policeman').forEach(ensurePolicemanIntel);
+      state.players.filter(p => roleHasSpecialId(roleOf(p), 'policeman')).forEach(ensurePolicemanIntel);
     }
 
     // ---- Handoff / day --------------------------------------------------------
@@ -2002,7 +2028,7 @@
         ? `${rolePill(role)}<div style="margin-top:10px">${escapeHtml(role?.description || '')}</div><div class="tiny muted" style="margin-top:10px">Night ability: ${escapeHtml(NIGHT_ACTIONS[role?.nightAction]?.label || 'None')}</div>`
         : 'Tap reveal to privately see your role.';
       if (state.handoffRevealed) {
-        if (role?.id === 'policeman') ensurePolicemanIntel(player);
+        if (roleHasSpecialId(role, 'policeman')) ensurePolicemanIntel(player);
         renderKnownRoles(player, 'handoffKnownRoles');
         $('handoffKnownRoles').innerHTML += specialRoleIntelHtml(player);
       } else $('handoffKnownRoles').innerHTML = '';
@@ -2115,12 +2141,12 @@
     function coordinatedKillMembers(actor) {
       const role = roleOf(actor);
       if (!role || !isTeamKillRole(role)) return [actor];
-      if (role.id === 'godfather') return playersAlive().filter(player => roleOf(player)?.orientation === 'evil');
+      if (roleHasSpecialId(role, 'godfather')) return playersAlive().filter(player => roleOf(player)?.orientation === 'evil');
       return playersAlive().filter(player => roleOf(player)?.id === role.id);
     }
 
     function teamKillGroupKey(role) {
-      return role?.id === 'godfather' ? 'evil' : role?.id;
+      return roleHasSpecialId(role, 'godfather') ? 'evil' : role?.id;
     }
 
     function getConfiguredNightOrder(players) {
@@ -2178,7 +2204,7 @@
       };
       nightPlayers.forEach(player => {
         const role = roleOf(player);
-        if (role?.id === 'policeman') ensurePolicemanIntel(player);
+        if (roleHasSpecialId(role, 'policeman')) ensurePolicemanIntel(player);
         if (role?.nightAction === 'gambler') state.night.gamblerActions[player.id] = randomChoice(gamblerAbilityPool()) || 'none';
         if (nightActionFor(player) === 'seer') {
           const possible = nightPlayers.filter(t => t.id !== player.id);
@@ -3079,9 +3105,9 @@
       if (state.autoSideWinChecks !== false) {
         const neutrals = living.filter(p => roleOf(p)?.orientation === 'neutral');
         if (evil === 0) {
-          const livingJester = living.find(p => p.roleId === 'jester');
+          const livingJester = living.find(p => roleHasSpecialId(roleOf(p), 'jester'));
           if (livingJester) {
-            const sk = state.roles.find(r => r.id === 'serial_killer');
+            const sk = state.roles.find(r => roleHasSpecialId(r, 'serial_killer'));
             if (sk) {
               livingJester.roleId = sk.id;
               livingJester.framedRoleId = null;
@@ -3142,6 +3168,7 @@
       const title = $('roleTitle').value.trim(), description = $('roleDescription').value.trim();
       if (!title || !description) {alert('Give the role a title and player-facing description.'); return;}
       const orientation = $('roleOrientation').value, visibility = $('roleVisibility').value, nightAction = $('roleNightAction').value, winCondition = $('roleWinCondition').value;
+      const specialId = SPECIAL_ROLE_IDS.has($('roleSpecialId').value) ? $('roleSpecialId').value : 'default';
       const visibleToRoleIds = [...$('roleVisibleToRoles').querySelectorAll('input[type=checkbox][data-role-id]:checked')].map(input => input.dataset.roleId);
       const targetFilter = $('roleTargetFilter').value;
       const canTargetSelf = $('roleCanTargetSelf').checked;
@@ -3151,7 +3178,7 @@
       if (state.editingRoleId) {
         const role = state.roles.find(r => r.id === state.editingRoleId);
         const previousNightAction = role?.nightAction;
-        Object.assign(role, {title, orientation, description, visibility, visibleToRoleIds, nightAction, targetFilter, canTargetSelf, maxUses, nightPrompt, winCondition});
+        Object.assign(role, {title, orientation, description, visibility, visibleToRoleIds, nightAction, targetFilter, canTargetSelf, maxUses, nightPrompt, winCondition, specialId});
         // Special target state belongs to the Hater ability, not to the Hater role id.
         // If the ability is changed away from Hater, clear any stale target state so
         // the role behaves exactly like the newly selected ability.
@@ -3161,7 +3188,7 @@
           });
         }
       } else {
-        state.roles.push({id: `custom_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, title, orientation, description, visibility, visibleToRoleIds, nightAction, targetFilter, canTargetSelf, maxUses, nightPrompt, winCondition, randomCount: 0});
+        state.roles.push({id: `custom_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, specialId, title, orientation, description, visibility, visibleToRoleIds, nightAction, targetFilter, canTargetSelf, maxUses, nightPrompt, winCondition, randomCount: 0});
       }
       closeRoleEditor(); renderSetup();
     });
@@ -3603,7 +3630,7 @@
       const knownRoles = !player?.alive
         ? state.players.map(t => ({id: t.id, name: t.name, role: roleOf(t)?.title || 'Unknown', orientation: roleOf(t)?.orientation || 'neutral'}))
         : onlineKnownRolesFor(player);
-      const specialIntel = r?.id === 'policeman' ? (()=>{const intel=ensurePolicemanIntel(player),target=playerOf(intel?.targetId);return intel&&target?{type:'policeman',targetName:target.name,roleTitle:intel.roleTitle,orientation:intel.orientation}:null;})() : (r?.id === 'henchman' ? {type:'henchman',policemen:state.players.filter(p=>roleOf(p)?.id==='policeman').map(p=>p.name)} : null);
+      const specialIntel = roleHasSpecialId(r, 'policeman') ? (()=>{const intel=ensurePolicemanIntel(player),target=playerOf(intel?.targetId);return intel&&target?{type:'policeman',targetName:target.name,roleTitle:intel.roleTitle,orientation:intel.orientation}:null;})() : (roleHasSpecialId(r, 'henchman') ? {type:'henchman',policemen:state.players.filter(p=>roleHasSpecialId(roleOf(p),'policeman')).map(p=>p.name)} : null);
       const payload = {version: state.onlineVersion, role:r ? {title:r.title, orientation:r.orientation, description:r.description, nightAction:r.nightAction}:null, knownRoles, specialIntel, turn:null, result:null};
       if (!r || !player) return payload;
       if (state.phase === 'day') {
@@ -4115,7 +4142,6 @@
 
       const nightAction = String(nightActionFor(actor) || 'none');
       if (nightAction === 'kill' || nightAction === 'teamKill') {
-        const roleIsPeacemaker = role?.id === 'peacemaker';
         const target = playerOf(Number(value));
         if (value === 'skip') {
           n.round1Actions[actor.id] = {action:'none'};
@@ -4125,10 +4151,6 @@
           await publishOnlineRoom(); await maybeFinishOnlineRound1(); return;
         }
         if (!target || !target.alive || target.id === actor.id) {
-          if (roleIsPeacemaker) {
-            ackOnlineCommand(commandUid, commandId, false, 'Peacemaker must use the team kill. That target is no longer available; choose another living target.');
-            await publishOnlineRoom(); return;
-          }
           n.round1Actions[actor.id] = {action:'none'};
           n.round1Submitted[actor.id] = true;
           ackOnlineCommand(commandUid, commandId, true, 'That target is no longer available, so the night action was recorded as no-op.');
@@ -4485,7 +4507,7 @@
       await setOnlineJoinable(false);
       bumpOnlineVersion(); const nightPlayers=playersAlive().slice(); const round1SeerTargets={}; const gamblerActions={};
       const gamblerPool=gamblerAbilityPool();
-      nightPlayers.forEach(p=>{p.framedRoleId=null; if(roleOf(p)?.id==='policeman') ensurePolicemanIntel(p); if(roleOf(p)?.nightAction==='gambler') gamblerActions[p.id]=randomChoice(gamblerPool)||'none'; if((gamblerActions[p.id]||roleOf(p)?.nightAction)==='seer'){const choices=nightPlayers.filter(t=>t.id!==p.id);round1SeerTargets[p.id]=randomChoice(choices)?.id??null;}});
+      nightPlayers.forEach(p=>{p.framedRoleId=null; if(roleHasSpecialId(roleOf(p),'policeman')) ensurePolicemanIntel(p); if(roleOf(p)?.nightAction==='gambler') gamblerActions[p.id]=randomChoice(gamblerPool)||'none'; if((gamblerActions[p.id]||roleOf(p)?.nightAction)==='seer'){const choices=nightPlayers.filter(t=>t.id!==p.id);round1SeerTargets[p.id]=randomChoice(choices)?.id??null;}});
       const queue = getConfiguredNightOrder(nightPlayers);
       state.night={round:1,queue,index:0,busy:false,usedTeamKillRoleIds:[],pendingAttacks:[],reactionQueue:[],reactionCompleted:[],round1Players:nightPlayers,round1Submitted:{},round1SeerTargets,round1InspectTargets:{},framerTargetId:null,framerRoleChooserId:null,roleChangeActorId:null,roleChangeTargetId:null,pendingRoleChanges:[],haterTargets:{},protectedIds:[],blockedIds:[],trackTargets:{},watchTargets:{},actionRecords:{},round1Actions:{},gamblerActions,onlineAckNeeded:false,onlineResults:{},onlineSeerTargetId:null};
       await publishOnlineRoom();
