@@ -165,6 +165,51 @@
         .handoff-name { font-size:28px; font-weight:700; margin:12px 0; overflow-wrap:anywhere; }
         .vote-options { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
         .vote-choice { text-align:left; padding:12px; }
+        button:disabled { opacity:.45; cursor:default; }
+        button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline:2px solid var(--accent); outline-offset:3px;
+        }
+        .play-layout > div { min-width:0; }
+        .word, .summary { overflow-wrap:anywhere; }
+        .vote-choice { border-color:rgba(148,163,184,.3) !important; color:#e6eef8 !important; }
+        .vote-choice:focus, .vote-choice:hover { background:rgba(96,165,250,.12); }
+        @media (max-width:600px) {
+            body { padding:12px; padding-bottom:max(20px, env(safe-area-inset-bottom)); }
+            h1 { font-size:26px; margin:12px 0 18px; }
+            .card { padding:14px; }
+            input[type=text], select, textarea { font-size:16px; min-height:46px; background:#0b1220; border-color:rgba(148,163,184,.24); }
+            button { min-height:46px; padding:12px 14px; touch-action:manipulation; }
+            label, .muted, .small { line-height:1.5; }
+            #setup > div:not(.players) { flex-wrap:wrap; gap:16px !important; }
+            #setup > div > div { flex:1 1 100% !important; width:100% !important; min-width:0; }
+            #setup > div > div > div { flex-wrap:wrap; }
+            #setup input { min-width:0; }
+            #modelInput { width:100% !important; }
+            #genPrompt { flex-basis:100%; }
+            #generateBtn { width:100%; }
+            .toggles { gap:8px; }
+            .toggle { display:flex; align-items:center; min-height:44px; padding:10px; margin:0; border:1px solid rgba(148,163,184,.15); }
+            input[type=checkbox] { width:18px; height:18px; accent-color:var(--accent); flex-shrink:0; }
+            .row { flex-wrap:wrap; padding:12px; background:rgba(255,255,255,.02); border:1px solid rgba(148,163,184,.12); border-radius:8px; }
+            .row input[type=text], .row select { flex:1 1 100%; width:100% !important; min-width:0; }
+            .row button { margin-left:auto; }
+            #startBtn { width:100%; }
+            .play-layout { display:grid !important; grid-template-columns:minmax(0,1fr) auto; align-items:start !important; gap:14px !important; }
+            .play-layout > div:first-child { grid-column:1; grid-row:1; }
+            .play-layout > div:nth-child(2) { grid-column:1 / -1; grid-row:2; width:100%; }
+            .play-layout > div:nth-child(3) { grid-column:2; grid-row:1; width:auto !important; text-align:right !important; }
+            #word { min-height:220px; padding:18px 14px; }
+            .handoff { padding:12px 0; }
+            .handoff-name { font-size:30px; line-height:1.2; margin:16px 0; }
+            .handoff button, #confirmVote, #openBallot, #revealResults, #backToSetup, #answersVote { width:100%; }
+            #questionActions { flex-wrap:wrap; }
+            #questionActions button { flex:1 1 130px; }
+            #end { width:100%; }
+            #end:disabled { display:none; }
+            .vote-options { gap:10px; }
+            .vote-choice { min-height:50px; }
+            footer { line-height:1.5; }
+        }
     </style>
 </head>
 
@@ -267,7 +312,7 @@
                     type="button">Start</button></div>
         </div>
         <div class="card" id="play" style="display:none">
-            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <div class="play-layout" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
                 <div style="flex:1">
                     <div class="muted">Current</div>
                     <div id="current" style="font-weight:700">Player 1</div>
