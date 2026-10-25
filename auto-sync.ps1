@@ -32,11 +32,37 @@ function Git-Run {
     if ($LASTEXITCODE -ne 0) { throw ($output -join "`n") }
     return ($output -join "`n")
 }
+$pagesStatePath = Join-Path $repo '.git\pages-notification.json'
+$pagesNotifiedRevision = ''
+if (Test-Path -LiteralPath $pagesStatePath) {
+    try { $pagesNotifiedRevision = (Get-Content -LiteralPath $pagesStatePath -Raw | ConvertFrom-Json).revision } catch { }
+}
+function Check-PagesDeployment {
+    param([string]$Revision)
+    if (-not $Revision -or $Revision -eq $script:pagesNotifiedRevision) { return }
+    $headers = @{ 'User-Agent' = 'Chameleon-Sync'; 'Accept' = 'application/vnd.github+json' }
+    $uri = "https://api.github.com/repos/beeboop47/chameleon/actions/runs?head_sha=$Revision&per_page=10"
+    $response = Invoke-RestMethod -Uri $uri -Headers $headers -TimeoutSec 20
+    $run = $response.workflow_runs | Where-Object { $_.name -eq 'pages build and deployment' -and $_.head_sha -eq $Revision -and $_.head_branch -eq 'main' } | Sort-Object run_number -Descending | Select-Object -First 1
+    if ($null -eq $run -or $run.status -ne 'completed') { return }
+    if ($run.conclusion -eq 'success') {
+        Show-SyncNotification 'Chameleon is live on GitHub Pages' 'Deployment succeeded. Your updated game is ready at https://beeboop47.github.io/chameleon/'
+    } elseif ($run.conclusion -in @('failure', 'timed_out', 'action_required', 'startup_failure')) {
+        Show-SyncNotification 'Chameleon deployment failed' 'The files reached GitHub, but GitHub Pages did not deploy them. Check the repository Actions page.'
+    } else {
+        # Cancelled runs may be replaced by a newer deployment attempt.
+        return
+    }
+    $script:pagesNotifiedRevision = $Revision
+    @{ revision = $Revision; conclusion = $run.conclusion } | ConvertTo-Json | Set-Content -LiteralPath $pagesStatePath
+    Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) Pages deployment $($run.conclusion): $Revision"
+}
 try {
     $lastState = ''
     $lastChange = Get-Date
     $retryAfter = Get-Date
     $failureNotified = $false
+    $nextPagesCheck = Get-Date
     while ($true) {
         try {
             $state = Git-Run @('status', '--porcelain')
@@ -61,8 +87,7 @@ try {
                 if ([int]$ahead -gt 0) {
                     Git-Run @('push', 'origin', 'main') | Out-Null
                     Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) Uploaded to GitHub."
-                    $revision = Git-Run @('rev-parse', '--short', 'HEAD')
-                    Show-SyncNotification 'Chameleon uploaded to GitHub' "Your saved changes are on GitHub (main, $revision)."
+                    $nextPagesCheck = Get-Date
                     $failureNotified = $false
                 }
                 $retryAfter = (Get-Date).AddSeconds(15)
@@ -74,6 +99,14 @@ try {
                 $failureNotified = $true
             }
             $retryAfter = (Get-Date).AddSeconds(60)
+        }
+        if ((Get-Date) -ge $nextPagesCheck) {
+            try {
+                Check-PagesDeployment (Git-Run @('rev-parse', 'origin/main'))
+            } catch {
+                Add-Content -LiteralPath $log -Value "$(Get-Date -Format o) Could not check Pages deployment; will retry. $($_.Exception.Message)"
+            }
+            $nextPagesCheck = (Get-Date).AddSeconds(90)
         }
         Start-Sleep -Seconds 2
         if ($null -ne $notification) { [System.Windows.Forms.Application]::DoEvents() }
