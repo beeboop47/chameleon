@@ -1,0 +1,53 @@
+/* Keep the original midnight-blue cards, with a little more life. */
+:root { color-scheme:dark; }
+body { background:radial-gradient(ellipse at 85% 0%, #142341 0, transparent 45%), linear-gradient(180deg, #071029, #0b1220); }
+.game-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; }
+.game-header > div:first-child { min-width:0; }
+.game-header h1 { margin:8px 0; }
+.game-header p { margin:0; line-height:1.6; }
+.eyebrow { color:#9bb8de; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+#mascot { width:180px; flex-shrink:0; }
+.chameleon { width:100%; height:auto; overflow:visible; }
+.chameleon-eye { animation:look-around 12s ease-in-out infinite; transform-origin:165px 63px; }
+.mascot-spark { animation:soft-glow 5s ease-in-out infinite; }
+.card { border:1px solid rgba(148,163,184,.1); }
+.mode-preview { display:flex; flex-wrap:nowrap !important; align-items:center; gap:14px; margin-top:12px; padding:14px; border:1px solid rgba(96,165,250,.17); border-radius:8px; background:rgba(96,165,250,.04); }
+.mode-preview > div { min-width:0; flex:1; }
+.mode-preview .game-art { width:54px; height:48px; flex-shrink:0; margin:0; }
+.mode-preview strong { display:block; margin-bottom:4px; }
+.game-art { display:block; width:70px; height:62px; color:#83b8ef; margin:0 auto 14px; flex-shrink:0; }
+.word { flex-direction:column; position:relative; border:1px solid rgba(96,165,250,.12); }
+.word > div, .summary, .mode-preview { animation:card-arrive .3s ease-out both; }
+.word > .game-art { animation:card-arrive .35s ease-out both; }
+.secret-word { font-size:clamp(26px,6vw,38px); line-height:1.25; font-weight:700; margin:16px 0; overflow-wrap:anywhere; }
+.word-pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding-bottom:16px; margin-bottom:16px; border-bottom:1px solid rgba(148,163,184,.15); }
+.word-pair strong, .word-pair span { display:block; overflow-wrap:anywhere; }
+.word-pair strong { margin-top:6px; }
+button { transition:background .15s ease, transform .15s ease, border-color .15s ease; }
+button:not(:disabled):active { transform:translateY(1px) scale(.985); }
+.vote-choice[aria-pressed=true] { background:rgba(96,165,250,.16); border-color:#60a5fa !important; }
+#generationStatus { min-height:20px; }
+#generationStatus[data-state=error] { color:#f5aaaa; }
+#generationStatus[data-state=success] { color:#a4d5c0; }
+#generateBtn.is-generating::after { content:''; display:inline-block; width:12px; height:12px; margin-left:9px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
+#genPrompt { min-width:0; flex:1; resize:vertical; }
+@keyframes card-arrive { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+@keyframes look-around { 0%,35%,65%,100% { transform:translateX(0); } 45%,55% { transform:translateX(-3px); } }
+@keyframes soft-glow { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media (max-width:600px) {
+    .game-header { align-items:center; padding:8px 0 16px; gap:4px; }
+    .game-header h1 { font-size:25px; line-height:1.15; }
+    .game-header p { max-width:230px; }
+    .eyebrow { font-size:9px; letter-spacing:.1em; }
+    #mascot { width:100px; }
+    .mode-preview { padding:12px; gap:10px; }
+    .mode-preview .game-art { width:42px; }
+    .card { padding:14px; }
+    .word .handoff button { margin-top:20px; }
+    .game-art { width:64px; height:56px; }
+    #genPrompt { flex-basis:100%; font-size:16px; }
+}
+@media (prefers-reduced-motion:reduce) {
+    *, *::before, *::after { animation:none !important; transition:none !important; }
+}
