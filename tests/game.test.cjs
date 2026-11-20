@@ -5,6 +5,14 @@ const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 
+test('Page loads a consistent version of all local scripts and styles', () => {
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const assets = [...html.matchAll(/(?:src|href)="([^"?]+\.(?:js|css))\?v=([^"]+)"/g)];
+    assert.equal(assets.length, 5);
+    assert.equal(new Set(assets.map(match => match[2])).size, 1);
+    assets.forEach(match => assert(fs.existsSync(path.join(root, match[1]))));
+});
+
 // A small DOM fixture for state and privacy checks; visual checks use the live site.
 function fixture() {
     const nodes = new Map();

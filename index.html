@@ -211,7 +211,7 @@
             footer { line-height:1.5; }
         }
     </style>
-    <link rel="stylesheet" href="atmosphere.css" />
+    <link rel="stylesheet" href="atmosphere.css?v=20261120-word-impostor-2" />
 </head>
 
 <body>
@@ -239,12 +239,12 @@
                             Seer</label><label class="toggle"><input type="checkbox" id="enableDoubleAgent"
                                 style="margin-right:8px"> Double Agent</label><label class="toggle"><input
                                 type="checkbox" id="enableFollower" style="margin-right:8px"> Follower</label></div>
-                    <div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a
+                    <details class="role-guide"><summary>What do the roles do?</summary><div class="muted small" style="margin-top:6px">Jester: wants to be voted out. Assassin: has a
                         target to get voted out. Seer: learns about either a player (who is a special role or an
                         impostor) or a special role. Double Agent: appears as impostor to impostors but is actually
                         innocent. Note: By default, Assassin behaves like an impostor for what they see (they do not see
                         the shared phrase). Other special roles still see the phrase by default unless configured
-                        manually.</div>
+                        manually.</div></details>
                 </div>
                 <div style="width:200px"><label>Controls</label>
                     <div style="display:flex;gap:8px;"><button id="add" type="button">Add player</button><button
@@ -344,10 +344,10 @@
         <footer style="margin-top:12px" class="muted">Manual mode supports host-only seer/assassin overrides and
             per-player words. Players are not shown that a word is player-specific.</footer>
     </div>
-    <script src="visuals.js"></script>
-    <script src="game.js"></script>
-    <script src="generator.js"></script>
-    <script src="game-flow.js"></script>
+    <script src="visuals.js?v=20261120-word-impostor-2"></script>
+    <script src="game.js?v=20261120-word-impostor-2"></script>
+    <script src="generator.js?v=20261120-word-impostor-2"></script>
+    <script src="game-flow.js?v=20261120-word-impostor-2"></script>
 </body>
 
 </html>
